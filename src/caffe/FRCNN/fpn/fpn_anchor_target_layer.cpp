@@ -94,9 +94,9 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
 
  //can be specified in proto or config file
  //from C2 to C6
- //const int _feat_strides = {4, 8, 16, 32, 64};//use it as base anchor size
- //const int inverse_anchor_sizes = {32, 64, 128, 256, 512};//not used
- //const int anchor_scales = {8, 8, 8, 8, 8};
+ const int _feat_strides[] = {4, 8, 16, 32, 64};//use it as base anchor size
+ //const int anchor_sizes = {32, 64, 128, 256, 512};//not used
+ const int anchor_scales[] = {8, 8, 8, 8, 8};
  float arr[] = {0.5, 1, 2};
  vector<float> ratios (arr, arr+3);
  vector<int> inds_inside;
@@ -110,7 +110,10 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
   
   // Generate anchors
   DLOG(ERROR) << "========== generate anchors";
-  vector<vector<int> > param_anchors = generate_anchors(feat_stride_, ratios, 8);//anchor_scale=8
+  int stride_idx = (int)(log2(feat_stride_) - 1); //feat_stride in range (2,32)
+  CHECK(stride_idx >= 0 && stride_idx < 5) << "feat_stride param should in range (2,32)";
+  //set anchor size = 16 * feat_stride_ due to feat_stride in range (2,32) different from _feat_strides
+  vector<vector<int> > param_anchors = generate_anchors(_feat_strides[stride_idx], ratios, anchor_scales[stride_idx]); // min anchor_size=32
   
   Dtype bounds[4] = {-border_, -border_, im_width + border_, im_height + border_};
 
@@ -138,6 +141,8 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
   //DLOG(ERROR) << "========= inside_anchors : " << inds_inside.size();
 
   const int n_anchors = anchors.size();
+  //DLOG(INFO) << "========= generated anchors num: " << n_anchors;
+  if(n_anchors < 1) LOG(ERROR) << "cannot generate anchor boxes,the anchor size exceeds the image size,modify your config. width,height,stride_idx: " << width<<" "<<height<< " "<<stride_idx;
 
   // label: 1 is positive, 0 is negative, -1 is dont care
   vector<int> labels(n_anchors, -1);

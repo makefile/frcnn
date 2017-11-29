@@ -26,7 +26,7 @@ vector<vector<int> > generate_anchors(int base_size, vector<float> &ratios, int 
 		float size_ratio = size / r ;
 		w = (int)(sqrt(size_ratio));
 		h = (int)(w * r);
-		vector<int> a = anchors[i];
+		vector<int> &a = anchors[i];//make sure this is reference instead of copy
 		a[0] = x_ctr - 0.5 * (w - 1);
 		a[1] = y_ctr - 0.5 * (h - 1); 
 		a[2] = x_ctr + 0.5 * (w - 1); 
