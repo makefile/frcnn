@@ -1,0 +1,15 @@
+train_net: "matlab/FRCNN/For_LOC/eight/vgg19/train.proto"
+base_lr: 0.001
+lr_policy: "step"
+gamma: 0.1
+stepsize: 40000
+max_iter: 55000
+display: 20
+average_loss: 100
+momentum: 0.9
+weight_decay: 0.0005
+# function
+snapshot: 5000
+# We still use the snapshot prefix, though
+snapshot_prefix: "matlab/FRCNN/For_LOC/eight/vgg19/snapshot/vgg19_faster_rcnn"
+iter_size: 1
