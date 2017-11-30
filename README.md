@@ -4,6 +4,7 @@
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
 - Faster rcnn joint train, test and evaluate
 - Action recognition (Two Stream CNN)
+- support snapshot after got -SIGTERM (kill command's default signal)
 
 **Data Preprocess**
 

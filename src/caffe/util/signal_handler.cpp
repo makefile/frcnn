@@ -19,6 +19,9 @@ namespace {
     case SIGINT:
       got_sigint = true;
       break;
+    case SIGTERM: // let it be same behavior as SIGINT
+      got_sigint = true;
+      break;
     }
   }
 
@@ -42,6 +45,9 @@ namespace {
     if (sigaction(SIGINT, &sa, NULL) == -1) {
       LOG(FATAL) << "Cannot install SIGINT handler.";
     }
+    if (sigaction(SIGTERM, &sa, NULL) == -1) {
+      LOG(FATAL) << "Cannot install SIGTERM handler.";
+    }
   }
 
   // Set the signal handlers to the default.
@@ -60,6 +66,9 @@ namespace {
       }
       if (sigaction(SIGINT, &sa, NULL) == -1) {
         LOG(FATAL) << "Cannot uninstall SIGINT handler.";
+      }
+      if (sigaction(SIGTERM, &sa, NULL) == -1) {
+        LOG(FATAL) << "Cannot uninstall SIGTERM handler.";
       }
 
       already_hooked_up = false;
