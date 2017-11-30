@@ -35,25 +35,25 @@ vector<vector<int> > generate_anchors(int base_size, vector<float> &ratios, int 
 	return anchors;
 }
 
-// get feature pyramid level,range (2~6)
+// get feature pyramid level,range (2~max_level),for RPN,max_level=6;for RCNN,max_level=5
 template <typename Dtype>
-int calc_level(Point4f<Dtype> &box) {
-	// assign rois to level Pk    (P2 ~ P6)
+int calc_level(Point4f<Dtype> &box, int max_level) {
+	// assign rois to level Pk    (P2 ~ P_max_level)
 	int w = box[2] - box[0];
 	int h = box[3] - box[1];
 	//224 is base size of ImageNet
-	return min(6, max(2, (int)(4 + log2(sqrt(w * h) / 224))));
+	return min(max_level, max(2, (int)(4 + log2(sqrt(w * h) / 224))));
 }
-template int calc_level(Point4f<float> &box);
-template int calc_level(Point4f<double> &box);
+template int calc_level(Point4f<float> &box, int max_level);
+template int calc_level(Point4f<double> &box, int max_level);
 
 template <typename Dtype>
-void split_top_rois_by_level(const vector<Blob<Dtype> *> &top,vector<Point4f<Dtype> > &rois) {
+void split_top_rois_by_level(const vector<Blob<Dtype> *> &top,vector<Point4f<Dtype> > &rois, int n_level) {
 	vector<vector<Point4f<Dtype> > > level_boxes (5,vector<Point4f<Dtype> >());
 	//int max_idx = 0;
 	//int max_roi_num = 0;
   	for (size_t i = 0; i < rois.size(); i++) {
-		int level_idx = calc_level(rois[i]) - 2;
+		int level_idx = calc_level(rois[i], n_level + 1) - 2;
 		level_boxes[level_idx].push_back(rois[i]);
 		//if(level_boxes[level_idx].size() > max_roi_num){
 		//	max_roi_num = level_boxes[level_idx].size();
@@ -82,6 +82,6 @@ void split_top_rois_by_level(const vector<Blob<Dtype> *> &top,vector<Point4f<Dty
 		}
 	}
 }
-template void split_top_rois_by_level(const vector<Blob<float> *> &top,vector<Point4f<float> > &rois);
-template void split_top_rois_by_level(const vector<Blob<double> *> &top,vector<Point4f<double> > &rois);
+template void split_top_rois_by_level(const vector<Blob<float> *> &top,vector<Point4f<float> > &rois, int n_level);
+template void split_top_rois_by_level(const vector<Blob<double> *> &top,vector<Point4f<double> > &rois, int n_level);
 

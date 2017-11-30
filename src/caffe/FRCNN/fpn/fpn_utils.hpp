@@ -15,11 +15,13 @@ using namespace caffe::Frcnn;
 //vector<int> generate_anchors(int base_size=16, vector<float> ratios={0.5, 1, 2}, int scale=8) {
 vector<vector<int> > generate_anchors(int base_size, vector<float> &ratios, int scale);
 
+//calc pyramid level of rois
 template <typename Dtype>
-int calc_level(Point4f<Dtype> &box) ;
+int calc_level(Point4f<Dtype> &box, int max_level) ;
 
+//put rois to different pyramid level top blob
 template <typename Dtype>
-void split_top_rois_by_level(const vector<Blob<Dtype> *> &top,vector<Point4f<Dtype> > &rois) ;
+void split_top_rois_by_level(const vector<Blob<Dtype> *> &top,vector<Point4f<Dtype> > &rois, int n_level) ;
 
 #endif
 

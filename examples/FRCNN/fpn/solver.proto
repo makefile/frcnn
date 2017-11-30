@@ -1,0 +1,20 @@
+# Resnet 101   When 07: 72.x+%, using 07+12, 79.x+%(18w iterations)
+# fyk: res50 *.proto files is copied from res101
+train_net: "exp/fpn/fpn-vgg16-train.proto"
+#base_lr: 0.001
+# 0.001 maybe too high for swish activation function,and will get NaN,the paper also said decrease a liitle is better.
+base_lr: 0.0005
+lr_policy: "multistep"
+gamma: 0.1
+stepvalue: 60000
+max_iter: 80000
+display: 100
+average_loss: 100
+momentum: 0.9
+weight_decay: 0.0001
+# function
+snapshot: 200
+# We still use the snapshot prefix, though
+snapshot_prefix: "exp/fpn/snapshot/fpn-vgg16-NWPU_frcnn"
+# 每次循环都会以batch_size大小计算梯度和loss，最后再取iter_size次的平均。可以看成iter_size*batch_size次更新一次参数。
+iter_size: 2

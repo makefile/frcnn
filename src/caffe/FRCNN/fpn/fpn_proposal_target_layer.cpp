@@ -30,16 +30,16 @@ void FPNProposalTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bott
   top[1]->Reshape(1, 5, 1, 1);
   top[2]->Reshape(1, 5, 1, 1);
   top[3]->Reshape(1, 5, 1, 1);
-  top[4]->Reshape(1, 5, 1, 1);
-  int top_idx = 4;//the following top blob all has at least num=5 same as pyramid level,
+  // top[4]->Reshape(1, 5, 1, 1);
+  int top_idx = 3;//the following top blob all has at least num=4 same as pyramid level,though there is not sure what the num will be in forward,we have to set this,because Caffe will check num consistence before forward.
   // labels
-  top[top_idx + 1]->Reshape(5, 1, 1, 1);
+  top[top_idx + 1]->Reshape(4, 1, 1, 1);
   // bbox_targets
-  top[top_idx + 2]->Reshape(5, config_n_classes_ * 4, 1, 1);
+  top[top_idx + 2]->Reshape(4, config_n_classes_ * 4, 1, 1);
   // bbox_inside_weights
-  top[top_idx + 3]->Reshape(5, config_n_classes_ * 4, 1, 1);
+  top[top_idx + 3]->Reshape(4, config_n_classes_ * 4, 1, 1);
   // bbox_outside_weights
-  top[top_idx + 4]->Reshape(5, config_n_classes_ * 4, 1, 1);
+  top[top_idx + 4]->Reshape(4, config_n_classes_ * 4, 1, 1);
   _forward_iter_ = 0; //fyk add for logging periodly
 }
 
@@ -102,17 +102,17 @@ void FPNProposalTargetLayer<Dtype>::Forward_cpu(
     rois_data[ top[0]->offset(i,4,0,0) ] = rois[i][3];
   }
   */
-  split_top_rois_by_level(top,rois);//save leveled rois to top blob
+  split_top_rois_by_level(top,rois,4);//save leveled rois to top blob
   //int split_total = 0;
   //for(int iii=0;iii<5;iii++) split_total += top[iii]->num();
   //CHECK_EQ(split_total,batch_size);
   _forward_iter_ ++;
   if (_forward_iter_ >= 200) {
-    LOG(INFO) << "FPNProposalTargetLayer => rois num: " << batch_size << " = " << top[0]->num() << " + " << top[1]->num() << " + " << top[2]->num() << " + " << top[3]->num() << " + " << top[4]->num();
+    LOG(INFO) << "FPNProposalTargetLayer => rois num: " << batch_size << " = " << top[0]->num() << " + " << top[1]->num() << " + " << top[2]->num() << " + " << top[3]->num();// << " + " << top[4]->num();
     _forward_iter_ = 0;	
   }
   //for(int iii=0;iii<5;iii++) LOG(INFO) << "top[" << iii << "] num = " << top[iii]->num();
-  int top_idx = 4;//the following top blob
+  int top_idx = 3;//the following top blob
   // classification labels
   top[top_idx + 1]->Reshape(batch_size, 1, 1, 1);
   Dtype *label_data = top[top_idx + 1]->mutable_cpu_data();

@@ -13,7 +13,6 @@
 
 **TODO list**
 
-- *some net proto and scripts of my own experiments have not been tracked*
 - support batch image greater than 1
 - support Rotated R-CNN for rotated bounding box
 - OHEM

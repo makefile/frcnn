@@ -47,8 +47,8 @@ class FPNProposalTargetLayer : public Layer<Dtype> {
 
   virtual inline int MinBottomBlobs() const { return 2; }
   virtual inline int MaxBottomBlobs() const { return 2; }
-  virtual inline int MinTopBlobs() const { return 9; }
-  virtual inline int MaxTopBlobs() const { return 9; }
+  virtual inline int MinTopBlobs() const { return 8; }
+  virtual inline int MaxTopBlobs() const { return 8; }
 
  protected:
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,

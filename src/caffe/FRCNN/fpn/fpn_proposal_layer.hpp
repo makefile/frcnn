@@ -41,7 +41,7 @@ class FPNProposalLayer : public Layer<Dtype> {
   virtual inline int MinBottomBlobs() const { return 11; }// include level pyramid.
   virtual inline int MaxBottomBlobs() const { return 11; }
   virtual inline int MinTopBlobs() const { return 1; }
-  virtual inline int MaxTopBlobs() const { return 5; }
+  virtual inline int MaxTopBlobs() const { return 4; }
 
 #ifndef CPU_ONLY
   virtual ~FPNProposalLayer() {

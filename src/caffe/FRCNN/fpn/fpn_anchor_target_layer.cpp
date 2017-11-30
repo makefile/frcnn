@@ -110,8 +110,8 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
   
   // Generate anchors
   DLOG(ERROR) << "========== generate anchors";
-  int stride_idx = (int)(log2(feat_stride_) - 1); //feat_stride in range (2,32)
-  CHECK(stride_idx >= 0 && stride_idx < 5) << "feat_stride param should in range (2,32)";
+  int stride_idx = (int)(log2(feat_stride_) - 2);
+  CHECK(stride_idx >= 0 && stride_idx < 5) << "feat_stride param should in range [4,64]";
   //set anchor size = 16 * feat_stride_ due to feat_stride in range (2,32) different from _feat_strides
   vector<vector<int> > param_anchors = generate_anchors(_feat_strides[stride_idx], ratios, anchor_scales[stride_idx]); // min anchor_size=32
   
