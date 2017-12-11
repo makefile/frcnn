@@ -101,7 +101,8 @@ void FrcnnRoiDataLayer<Dtype>::DataLayerSetUp(
       }
       image_database_cache_.push_back(std::make_pair(image_path, datum));
     }
-    vector<vector<float> > rois = data_load.GetRois( false );
+    //vector<vector<float> > rois = data_load.GetRois( false );
+    vector<vector<float> > rois = data_load.GetRois( true );//include difficulty GT rois
     for (size_t i = 0; i < rois.size(); ++i) {
       int label = rois[i][DataPrepare::LABEL];
       label_hist.insert(std::make_pair(label, 0));
