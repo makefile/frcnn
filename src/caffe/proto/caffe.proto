@@ -414,7 +414,7 @@ message LayerParameter {
   optional FocalLossParameter focal_loss_param = 205;
   // fyk add for Swish activation function
   optional SwishParameter swish_param = 206;
-  // fyk add for RPN
+  // fyk add for FPN
   optional FPNAnchorTargetParameter anchor_param = 207;
 
 }
@@ -485,6 +485,10 @@ message ROIPoolingParameter {
   // Multiplicative spatial scale factor to translate ROI coords from their
   // input scale to the scale used when pooling
   optional float spatial_scale = 3 [default = 1];
+  // fyk add for Mask R-CNN, 2017.12.12
+  optional float pad_ratio = 4 [default = 0]; // add padding to include more context info
+  optional uint32 bi_type = 5 [default = 1]; // interpolation method: enum BiType { BiLinear = 0, BiCubic = 1};
+  optional bool is_multi_interpolate = 6 [default = true]; // interpolation times, single or fourth times
 }
 message ROIMaskPoolingParameter {
   // Pad, kernel size, and stride are all given as a single value for equal

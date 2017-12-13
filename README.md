@@ -1,10 +1,18 @@
 **Special Feature for This Caffe Repository**
 
-- Clone from [D-X-Y/caffe-faster-rcnn](https://github.com/D-X-Y/caffe-faster-rcnn/tree/dev) `commit 10589c2d92`, will continuely updating.
+- Clone from [D-X-Y/caffe-faster-rcnn](https://github.com/D-X-Y/caffe-faster-rcnn/tree/dev) `commit 8ba1d26`, will continuely updating.
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
+- script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory
+- support snapshot after got -SIGTERM (kill command's default signal)
 - Faster rcnn joint train, test and evaluate
 - Action recognition (Two Stream CNN)
-- support snapshot after got -SIGTERM (kill command's default signal)
+
+**Special layers**
+
+- ROIAlign proposed in [Mask R-CNN](https://arxiv.org/abs/1703.06870)
+- FocalLoss in [Focal Loss for Dense Object Detection](https://arxiv.org/abs/1708.02002)
+- Swish Activation function in [Searching for Activation Functions](https://arxiv.org/abs/1710.05941)
+- eltwise layer using in-place sum to reduce memory, from [this PR](https://github.com/BVLC/caffe/pull/3708)
 
 **Data Preprocess**
 
@@ -18,7 +26,7 @@
 - OHEM
 - caffe layer module
 
-## Faster RCNN
+## [Faster R-CNN](https://arxiv.org/abs/1506.01497)
 
 ### Disclaimer
 The official Faster R-CNN code (written in MATLAB) is [available](https://github.com/ShaoqingRen/faster_rcnn) here. If your goal is to reproduce the results in our NIPS 2015 paper, please use the [official](https://github.com/ShaoqingRen/faster_rcnn) code.
@@ -33,11 +41,9 @@ Using `sh example/FRCNN/demo_frcnn.sh`, the will process five pictures in the `e
 Note: You should prepare the trained caffemodel into `models/FRCNN`, such as `ZF_faster_rcnn_final.caffemodel` for ZF model.
 
 ### Prepare for training and evaluation
-The list of training data is `examples/FRCNN/dataset/voc2007.trainval`.
-
-The list of testing data is `examples/FRCNN/dataset/voc2007.trainval`.
-
-Create symlinks for the PASCAL VOC dataset `ln -s $YOUR_VOCdevkit_Path $CAFFE_ROOT/VOCdevkit`.
+- The list of training data is `examples/FRCNN/dataset/voc2007.trainval`.
+- The list of testing data is `examples/FRCNN/dataset/voc2007.trainval`.
+- Create symlinks for the PASCAL VOC dataset `ln -s $YOUR_VOCdevkit_Path $CAFFE_ROOT/VOCdevkit`.
 
 As shown in VGG example `models/FRCNN/vgg16/train_val.proto`, the original pictures should appear at `$CAFFE_ROOT/VOCdevkit/VOC2007/JPEGImages/`. (Check window\_data\_param in FrcnnRoiData)
 
@@ -53,6 +59,8 @@ label x1 y1 x2 y2 difficulty
 
 ### Training
 `sh examples/FRCNN/zf/train_frcnn.sh` will start training process of voc2007 data using ZF model.
+
+The ImageNet pre-trained models can be found in [this link](https://drive.google.com/drive/folders/1xjFL-ZeVzXkY584ZsEnr9O6O3P1Ypjwd?usp=sharing)
 
 If you use the provided training script, please make sure:
 - VOCdevkit is within $CAFFE\_ROOT and VOC2007 in within VOCdevkit
@@ -96,4 +104,42 @@ More details in the code:
 ## Two-Stream Convolutional Networks for Action Recognition in Video
 
 See codes `src/caffe/ACTION_REC` and `include/caffe/ACTION_REC`
+
+## License and Citation
+
+Caffe is released under the [BSD 2-Clause license](https://github.com/BVLC/caffe/blob/master/LICENSE).
+The BAIR/BVLC reference models are released for unrestricted use.
+
+Please cite Caffe in your publications if it helps your research:
+
+    @article{jia2014caffe,
+      Author = {Jia, Yangqing and Shelhamer, Evan and Donahue, Jeff and Karayev, Sergey and Long, Jonathan and Girshick, Ross and Guadarrama, Sergio and Darrell, Trevor},
+      Journal = {arXiv preprint arXiv:1408.5093},
+      Title = {Caffe: Convolutional Architecture for Fast Feature Embedding},
+      Year = {2014}
+    }
+    @inproceedings{girshick2015fast,
+      title={Fast R-CNN},
+      author={Girshick, Ross},
+      booktitle={International Conference on Computer Vision},
+      pages={1440--1448},
+      year={2015}
+    }
+    @inproceedings{ren2015faster,
+      title={Faster {R-CNN}: Towards real-time object detection with region proposal networks},
+      author={Ren, Shaoqing and He, Kaiming and Girshick, Ross and Sun, Jian},
+      booktitle={Neural Information Processing Systems},
+      pages={91--99},
+      year={2015}
+    }
+    @article{ren2017faster,
+      title={Faster {R-CNN}: Towards real-time object detection with region proposal networks},
+      author={Ren, Shaoqing and He, Kaiming and Girshick, Ross and Sun, Jian},
+      journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+      volume={39},
+      number={6},
+      pages={1137--1149},
+      year={2017},
+      publisher={IEEE}
+    }
 
