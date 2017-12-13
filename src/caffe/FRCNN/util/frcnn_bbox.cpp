@@ -1,4 +1,5 @@
 #include "caffe/FRCNN/util/frcnn_utils.hpp"
+#include "caffe/FRCNN/util/frcnn_gpu_nms.hpp"
 
 namespace caffe {
 
@@ -7,6 +8,7 @@ namespace Frcnn {
 INSTANTIATE_CLASS(Point4f);
 INSTANTIATE_CLASS(BBox);
 
+#define USE_GPU_NMS //fyk: accelerate
 template <typename Dtype>
 Dtype get_iou(const Point4f<Dtype> &A, const Point4f<Dtype> &B) {
   const Dtype xx1 = std::max(A[0], B[0]);
@@ -21,6 +23,36 @@ Dtype get_iou(const Point4f<Dtype> &A, const Point4f<Dtype> &B) {
 template float get_iou(const Point4f<float> &A, const Point4f<float> &B);
 template double get_iou(const Point4f<double> &A, const Point4f<double> &B);
 
+#ifdef USE_GPU_NMS
+template <typename Dtype>
+vector<vector<Dtype> > get_ious(const vector<Point4f<Dtype> > &A, const vector<Point4f<Dtype> > &B) {
+    vector<float> bboxes(A.size() * 4);
+    vector<float> query_boxes(B.size() * 4);
+    for(int i=0;i<A.size();i++) {
+        bboxes[i * 4] = A[i][0];
+        bboxes[i * 4 + 1] = A[i][1];
+        bboxes[i * 4 + 2] = A[i][2];
+        bboxes[i * 4 + 3] = A[i][3];
+    }
+    for(int i=0;i<B.size();i++) {
+        query_boxes[i * 4] = B[i][0];
+        query_boxes[i * 4 + 1] = B[i][1];
+        query_boxes[i * 4 + 2] = B[i][2];
+        query_boxes[i * 4 + 3] = B[i][3];
+    }
+    // number of boxes
+    int n = bboxes.size() / 4;
+    int k = query_boxes.size() / 4;
+    std::vector<std::vector<Dtype> > ious(n,std::vector<Dtype>(k));//array of [n*k]
+    float *overlaps = new float[n * k];
+    _overlaps(overlaps, &bboxes[0], &query_boxes[0],n,k);
+    for(int i=0;i<n;i++)
+        for(int j=0;j<k;j++)
+            ious[i][j] = overlaps[i * k + j];
+    delete overlaps;
+    return ious;
+}
+#else
 template <typename Dtype>
 vector<vector<Dtype> > get_ious(const vector<Point4f<Dtype> > &A, const vector<Point4f<Dtype> > &B) {
   vector<vector<Dtype> >ious;
@@ -29,6 +61,7 @@ vector<vector<Dtype> > get_ious(const vector<Point4f<Dtype> > &A, const vector<P
   }
   return ious;
 }
+#endif
 template vector<vector<float> > get_ious(const vector<Point4f<float> > &A, const vector<Point4f<float> > &B);
 template vector<vector<double> > get_ious(const vector<Point4f<double> > &A, const vector<Point4f<double> > &B);
 

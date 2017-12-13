@@ -9,6 +9,9 @@
 #include "caffe/FRCNN/util/frcnn_utils.hpp"
 #include "caffe/FRCNN/util/frcnn_helper.hpp"
 #include "caffe/FRCNN/util/frcnn_param.hpp"  
+#include "caffe/FRCNN/util/frcnn_gpu_nms.hpp"
+
+#define USE_GPU_NMS //fyk: accelerate
 
 namespace caffe {
 
@@ -135,6 +138,26 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   DLOG(ERROR) << "========== apply nms, pre nms number is : " << n_anchors;
   std::vector<Point4f<Dtype> > box_final;
   std::vector<Dtype> scores_;
+//fyk: use gpu
+#ifdef USE_GPU_NMS
+  std::vector<float> boxes_host(n_anchors * 4);
+  for (int i=0; i<n_anchors; i++) {
+    const int a_i = sort_vector[i].second;
+    boxes_host[i * 4] = anchors[a_i][0];
+    boxes_host[i * 4 + 1] = anchors[a_i][1];
+    boxes_host[i * 4 + 2] = anchors[a_i][2];
+    boxes_host[i * 4 + 3] = anchors[a_i][3];
+  }
+  int keep_out[n_anchors];//keeped index of boxes_host
+  int num_out;//how many boxes are keeped
+  // call gpu nms
+  _nms(&keep_out[0], &num_out, &boxes_host[0], n_anchors, 4, rpn_nms_thresh);
+  num_out = num_out < rpn_post_nms_top_n ? num_out : rpn_post_nms_top_n;
+  for (int i=0; i<num_out; i++) {
+    box_final.push_back(anchors[sort_vector[keep_out[i]].second]);
+    scores_.push_back(sort_vector[keep_out[i]].first);
+  }
+#else
   for (int i = 0; i < n_anchors && box_final.size() < rpn_post_nms_top_n; i++) {
     if (select[i]) {
       const int cur_i = sort_vector[i].second;
@@ -149,7 +172,7 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
       scores_.push_back(sort_vector[i].first);
     }
   }
-
+#endif
   DLOG(ERROR) << "rpn number after nms: " <<  box_final.size();
 
   DLOG(ERROR) << "========== copy to top";
