@@ -1,0 +1,16 @@
+train_net: "exp/vgg16/train_val.proto"
+base_lr: 0.001
+lr_policy: "step"
+gamma: 0.1
+stepsize: 80000
+max_iter: 100000
+display: 100
+average_loss: 100
+momentum: 0.9
+weight_decay: 0.0001
+# function
+snapshot: 2000
+#snapshot: 40
+# We still use the snapshot prefix, though
+snapshot_prefix: "exp/snapshot/r-vgg16_frcnn"
+iter_size: 2

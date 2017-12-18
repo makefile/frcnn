@@ -1,0 +1,4 @@
+*.txt
+*.train
+*.val
+*.train_val

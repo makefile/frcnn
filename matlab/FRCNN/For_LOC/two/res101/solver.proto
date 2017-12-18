@@ -1,0 +1,17 @@
+# Resnet 101 solver file
+# When 07: 72.x+%, using 07+12, 79.x+%(18w iterations)
+train_net: "matlab/FRCNN/For_LOC/two/res101/train.proto"
+base_lr: 0.001
+lr_policy: "multistep"
+gamma: 0.1
+stepvalue: 70000
+max_iter: 90000
+display: 20
+average_loss: 100
+momentum: 0.9
+weight_decay: 0.0001
+# function
+snapshot: 10000
+# We still use the snapshot prefix, though
+snapshot_prefix: "matlab/FRCNN/For_LOC/two/res101/snapshot/res101_faster_rcnn"
+iter_size: 1
