@@ -23,8 +23,9 @@ voc_classes = [
            'motorbike', 'person', 'pottedplant',
            'sheep', 'sofa', 'train', 'tvmonitor' ]
 NWPU_classes = ['plane','ship','storage','harbor','bridge']
-HRSC_classes = [ "1", "carrier", "war", "mer" ]
-CLASSES = ['__background__'] + HRSC_classes
+fangyi_classes = ['huochuan', 'youlun', 'youting']
+#CLASSES = ['__background__'] + NWPU_classes
+CLASSES = ['__background__'] + fangyi_classes
 
 def parse_args():
     """
@@ -39,10 +40,7 @@ def parse_args():
                         default=None, type=str)
     parser.add_argument('--overlap', dest='overlap',
                         help='overlap value',
-                        default=0.1, type=float)
-    parser.add_argument('--score_thresh', dest='score_thresh',
-                        help='score thresh value',
-                        default=0.3, type=float)
+                        default=0.5, type=float)
     args = parser.parse_args()
 
     if args.gt_file is None or args.ans_file is None:
@@ -68,6 +66,7 @@ def prepare_data(args):
     recs = []
     results = []
     images = []
+    ground_truth = []
 
     total = 0
     boxes_num_gt = 0
@@ -92,19 +91,31 @@ def prepare_data(args):
         boxes_num_res += num_ans
         # Get Ground Truth Boxes
         # gt_current_box = np.zeros((num_gt, 5))
+	gt_current_box = []
         objects = []
         for index in range(num_gt):
             gt_line = gt_file.readline().strip('\r\n').split(' ')
             for jj in range(gt_line.count('')):
                 gt_line.remove('')
             assert (len(gt_line) == 6), 'Ground Truth : label x1 y1 x2 y2 diff, not {}'.format(gt_line)
+	    diff = int(gt_line[5])
+	    if diff == 0:
+	        gt_current_box.append( np.array([float(gt_line[0]), float(gt_line[1]), float(gt_line[2]), float(gt_line[3]), float(gt_line[4])]) )
+
             obj_struct = {}
             obj_struct['bbox'] = [float(gt_line[1]),float(gt_line[2]), float(gt_line[3]), float(gt_line[4])]
             obj_struct['cls']  = int(gt_line[0])
             obj_struct['difficult'] = int(gt_line[5])
             objects.append(obj_struct)
 
-        recs.append(objects)
+        num_gt = len(gt_current_box)
+	gt_current_box_ = np.zeros((num_gt, 5))
+	for index in range(num_gt):
+	    gt_current_box_[index, :] = gt_current_box[index]
+	
+	ground_truth.append(gt_current_box_)
+
+	recs.append(objects)
 
         # Get Results Boxes
         res_current_box = np.zeros((num_ans, 6))
@@ -113,7 +124,6 @@ def prepare_data(args):
             for jj in range(ans_line.count('')):
                 ans_line.remove('')
             assert (len(ans_line) == 6), 'Ground Truth : label x1 y1 x2 y2 confidence, not {}'.format(gt_line)
-            #if float(ans_line[5]) < args.score_thresh: continue # fyk
             res_current_box[index, :] = np.array([float(ans_line[0]), float(ans_line[1]), float(ans_line[2]),
                                                   float(ans_line[3]), float(ans_line[4]), float(ans_line[5])])
         results.append(res_current_box)
@@ -127,7 +137,7 @@ def prepare_data(args):
     print('Total {} result boxes load done').format(boxes_num_res)
     gt_file.close()
     ans_file.close()
-    return images, recs, results
+    return images, recs, ground_truth, results
 
 def voc_ap(rec, prec, use_07_metric=False):
     """ ap = voc_ap(rec, prec, [use_07_metric])
@@ -253,7 +263,7 @@ def cal_ap(RES, gts, ccls):
 
 if __name__ == '__main__':
     args = parse_args()
-    images, gts, results = prepare_data(args)
+    images, gts, gts_recall, results = prepare_data(args)
 
     print('Prepare Data Done')
     ovthresh = args.overlap
@@ -287,5 +297,45 @@ if __name__ == '__main__':
     for cls in range(1,num_class,1): # Ingore __background__
         rec, prec, AP[cls] = cal_ap(all_boxes[cls], gts, cls)
         print 'AP for {} = {}'.format(CLASSES[cls],AP[cls])
+    
+    mAP = np.mean(AP[1:])
+    print 'mAP = {}'.format(mAP)
+    # calculate recall
+    total = float(0)
+    TP = float(0)
+    for index in range(total_image):
+        score = results[index][:, -1]
+        order = score.ravel().argsort()[::-1]
+        boxes = results[index][order, 1:5]
+        BBGT = gts_recall[index][:, 1:]
+        det = np.zeros([BBGT.shape[0]])
+        for obj in range(boxes.shape[0]):
+            bb = boxes[obj, :]
+            # compute overlaps
+            # intersection
+            ixmin = np.maximum(BBGT[:, 0], bb[0])
+            iymin = np.maximum(BBGT[:, 1], bb[1])
+            ixmax = np.minimum(BBGT[:, 2], bb[2])
+            iymax = np.minimum(BBGT[:, 3], bb[3])
+            iw = np.maximum(ixmax - ixmin + 1., 0.)
+            ih = np.maximum(iymax - iymin + 1., 0.)
+            inters = iw * ih
+            # union
+            uni = ((bb[2] - bb[0] + 1.) * (bb[3] - bb[1] + 1.) +
+                   (BBGT[:, 2] - BBGT[:, 0] + 1.) *
+                   (BBGT[:, 3] - BBGT[:, 1] + 1.) - inters)
+            overlaps = inters / uni
+            ovmax = np.max(overlaps)
+            jmax = np.argmax(overlaps)
+            if ovmax > ovthresh:
+                if det[jmax] == 0:
+                    det[jmax] = 1
+                    TP += 1
+        total += BBGT.shape[0]
+        if index % 1000 == 0:
+            print 'Process {}/{} images '.format(index+1, total_image)
+    mRecall = TP / total
+    print 'Recall = %.4f , %5d / %5d' % (mRecall, TP, total)
+    f1_score = 2 * mAP * mRecall / ( mAP + mRecall )
+    print 'F1 = %.4f' % f1_score
 
-    print 'Mean AP = {}'.format(np.mean(AP[1:]))

@@ -64,27 +64,29 @@ def prepare_data(args):
         if gt_line == '':
             assert (gt_line == ans_line), 'GT File Done But Results File unfinished, {}'.format(ans_line)
             break
-        gt_line, ans_line = gt_line.strip('\n').split(' '), ans_line.strip('\n').split(' ')
+        gt_line, ans_line = gt_line.strip('\r\n').split(' '), ans_line.strip('\r\n').split(' ')
         assert (len(gt_line) == 2 and gt_line[0] == '#'), 'First Line of GT File Must Be \'# ID\', not {}'.format(
             gt_line)
         assert (len(ans_line) == 2 and ans_line[0] == '#'), 'First Line of Result File Must Be \'# ID\''
-        assert (ans_line[1] == gt_line[1]), 'ID og GT and Result Must Be Same'
-        gt_line, ans_line = gt_file.readline().strip('\n'), ans_file.readline().strip('\n')
+        assert (ans_line[1] == gt_line[1]), 'ID of GT and Result Must Be Same'
+        gt_line, ans_line = gt_file.readline().strip('\r\n'), ans_file.readline().strip('\r\n')
         assert (gt_line == ans_line), 'Image Does not Euqal : {} and {}'.format(gt_line, ans_line)
         images.append(gt_line)
 
-        gt_line, ans_line = gt_file.readline().strip('\n'), ans_file.readline().strip('\n')
+        gt_line, ans_line = gt_file.readline().strip('\r\n'), ans_file.readline().strip('\r\n')
         num_gt, num_ans = int(gt_line), int(ans_line)
 
         # Get Ground Truth Boxes
         gt_current_box = []#np.zeros((num_gt, 5))
         for index in range(num_gt):
-            gt_line = gt_file.readline().strip('\n').split(' ')
+            gt_line = gt_file.readline().strip('\r\n').split(' ')
             for jj in range(gt_line.count('')):
                 gt_line.remove('')
             assert (len(gt_line) == 6), 'Ground Truth : label x1 y1 x2 y2 diff, not {}'.format(gt_line)
             diff = int(gt_line[5])
-            if diff == 0:
+            # fyk: orginal there ignore diffult obj,but can cause GT box num 0
+            if True:
+            #if diff == 0:
                 gt_current_box.append( np.array([float(gt_line[0]), float(gt_line[1]),
                     float(gt_line[2]), float(gt_line[3]), float(gt_line[4])]) )
 
@@ -98,7 +100,7 @@ def prepare_data(args):
         # Get Results Boxes
         res_current_box = np.zeros((num_ans, 6))
         for index in range(num_ans):
-            ans_line = ans_file.readline().strip('\n').split(' ')
+            ans_line = ans_file.readline().strip('\r\n').split(' ')
             for jj in range(ans_line.count('')):
                 ans_line.remove('')
             assert (len(ans_line) == 6), 'Result : label x1 y1 x2 y2 confidence, not {}'.format(gt_line)

@@ -62,7 +62,14 @@ vector<boost::shared_ptr<Blob<float> > > Detector::predict(const vector<std::str
 }
 
 void Detector::predict(const cv::Mat &img_in, std::vector<caffe::Frcnn::BBox<float> > &results) {
-    NOT_IMPLEMENTED;
+    //NOT_IMPLEMENTED;
+    std::vector<caffe::Frcnn::RBBox<float> > rbboxes;
+    predict_original(img_in, rbboxes);
+    //get outer bounding box
+    for (int i=0; i < rbboxes.size(); i++) {
+        Point4f<float> p4 = rotate_outer_box_coordinates(rbboxes[i]);
+        results.push_back(caffe::Frcnn::BBox<float> (p4, rbboxes[i].confidence, rbboxes[i].id));
+    }
 }
 void Detector::predict(const cv::Mat &img_in, std::vector<caffe::Frcnn::RBBox<float> > &results) {
   CHECK(FrcnnParam::iter_test == -1 || FrcnnParam::iter_test > 1) << "FrcnnParam::iter_test == -1 || FrcnnParam::iter_test > 1";
