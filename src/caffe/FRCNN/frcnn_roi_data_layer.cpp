@@ -21,7 +21,9 @@
 //
 //#endif
 //fyk
-#include "util/equalize_hist.hpp"
+#include "data_enhance/histgram/equalize_hist.hpp"
+#include "data_augment/data_utils.hpp"
+#include "data_enhance/haze_free/haze.h"
 
 #include "caffe/data_transformer.hpp"
 #include "caffe/internal_thread.hpp"
@@ -238,6 +240,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   CHECK(lines_id_ < lines_.size() && lines_id_ >= 0) << "select error line id : " << lines_id_;
   int index = lines_[lines_id_];
   bool do_mirror = mirror && PrefetchRand() % 2 && this->phase_ == TRAIN;
+  bool do_augment = do_mirror;
   float max_short = scales[PrefetchRand() % scales.size()];
 
   read_time += timer.MicroSeconds();
@@ -255,19 +258,6 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
       return;
     }
   }
-  //fyk : do equlize_hist,only for 3-channel
-  int he_case = FrcnnParam::use_hist_equalize;
-  switch(he_case) {
-  case 1:
-        cv_img = equalizeIntensityHist(cv_img);
-        break;
-  case 2:
-        cv_img = equalizeChannelHist(cv_img);
-        break;
-  default:
-        break;
-  }
-  //fyk end
   cv::Mat src;
   cv_img.convertTo(src, CV_32FC3);
   if (do_mirror) {
@@ -289,6 +279,30 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
       reinterpret_cast<float *>(src.data)[offset + 2] -= this->mean_values_[2]; // R
     }
   }
+  vector<vector<float> > rois = roi_database_[index];
+  if (do_augment) {
+    src = data_augment(src, rois, 0, FrcnnParam::data_jitter, FrcnnParam::data_hue, FrcnnParam::data_saturation, FrcnnParam::data_exposure);
+  }
+  //fyk: do haze free,NOTICE that data enhancement should only be done one, current prioty is haze-free > retinex > hist_equalize
+  if (FrcnnParam::use_haze_free) {
+	src = remove_haze(src);
+  }else if (FrcnnParam::use_retinex) {
+  	// NOT_IMPLEMENTED
+  }else{
+  //fyk : do equlize_hist,only for 3-channel
+  int he_case = FrcnnParam::use_hist_equalize;
+  switch(he_case) {
+  case 1:
+        src = equalizeIntensityHist(src);
+        break;
+  case 2:
+        src = equalizeChannelHist(src);
+        break;
+  default:
+        break;
+  }
+  }
+  //fyk end
   float im_scale = Frcnn::get_scale_factor(src.cols, src.rows, max_short, max_long_);
   //fyk: check decimation or zoom,use different method
   if( src.rows > im_scale || src.cols > im_scale )
@@ -323,7 +337,6 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   top_label[3] = 0;
   top_label[4] = 0;
 
-  vector<vector<float> > rois = roi_database_[index];
   // Check and Reset rois
   CheckResetRois(rois, image_database_[index], cv_img.cols, cv_img.rows, im_scale);
   
