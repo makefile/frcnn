@@ -166,6 +166,14 @@ class Caffe {
   inline static bool multiprocess() { return Get().multiprocess_; }
   inline static void set_multiprocess(bool val) { Get().multiprocess_ = val; }
   inline static bool root_solver() { return Get().solver_rank_ == 0; }
+  // fyk add
+  // Module layer search path
+  inline void SetLayerPath(const vector<string> & search_path) {
+    layer_path_ = search_path;
+  }
+  inline void ClearLayerPath() { layer_path_.clear(); }
+  inline vector<string> LayerPath() { return layer_path_; }
+  //fyk end
 
  protected:
 #ifndef CPU_ONLY
@@ -180,6 +188,11 @@ class Caffe {
   int solver_count_;
   int solver_rank_;
   bool multiprocess_;
+
+  // fyk add
+  // Layer module search path
+  vector<string> layer_path_;
+  // fyk end
 
  private:
   // The private constructor to avoid duplicate instantiation.

@@ -416,7 +416,28 @@ message LayerParameter {
   optional SwishParameter swish_param = 206;
   // fyk add for FPN
   optional FPNAnchorTargetParameter anchor_param = 207;
+  // fyk add for Caffe module layer, refer caffe pull/5294
+  optional ModuleParameter module_param = 208;
 
+}
+
+// fyk add for Caffe module layer
+message ModuleParameter {
+  // Filename of module with extension.
+  required string module = 1;
+
+  // Type of the layer in the module.
+  // Either type or creator_symbol needs to be defined.
+  optional string type = 2;
+
+  // Name of symbol in module used to create the layer.
+  optional string creator_symbol = 3;
+
+  // Name of symbol in module used to delete the layer.
+  optional string deleter_symbol = 4;
+
+  // String containing parameters passed to the layer.
+  optional string param_str = 5;
 }
 
 // fyk Focal Loss for Dense Object Detection

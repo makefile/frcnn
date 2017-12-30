@@ -4,7 +4,8 @@ using namespace cv;
 
 void main_test_augment_and_rotate()
 {
-	char *img_path = "E:/datasets/NWPU/ship/ship_022.jpg";
+	//char *img_path = "E:/datasets/NWPU/ship/ship_022.jpg";
+	string img_path = "test.jpg";
 	float img_width = 256;
 	float img_height = 256;
 	int resize_h = 0;
@@ -15,7 +16,7 @@ void main_test_augment_and_rotate()
 	float saturation = 1.5;// .75;
 	float exposure = 1.5;//.75;
 	set_rand_seed(-1);
-	image orig = load_image_color(img_path, 0, 0);
+	image orig = load_image_color(img_path.c_str(), 0, 0);
 	
 	std::vector<std::vector<float> > rois;
 	std::vector<float> tmp{ 80, 80, 120, 200, 1 };

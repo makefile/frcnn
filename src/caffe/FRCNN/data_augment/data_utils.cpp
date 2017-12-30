@@ -394,7 +394,7 @@ void rgbgr_image(image im)
 	}
 }
 
-image load_image_cv(char *filename, int channels)
+image load_image_cv(const char *filename, int channels)
 {
 	IplImage* src = 0;
 	int flag = -1;
@@ -420,7 +420,7 @@ image load_image_cv(char *filename, int channels)
 	return out;
 }
 
-image load_image(char *filename, int w, int h, int c)
+image load_image(const char *filename, int w, int h, int c)
 {
 //#ifdef OPENCV
 	image out = load_image_cv(filename, c);
@@ -436,7 +436,7 @@ image load_image(char *filename, int w, int h, int c)
 	return out;
 }
 
-image load_image_color(char *filename, int w, int h)
+image load_image_color(const char *filename, int w, int h)
 {
 	return load_image(filename, w, h, 3);
 }

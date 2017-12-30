@@ -17,7 +17,14 @@ float FrcnnParam::fg_thresh;
 float FrcnnParam::bg_thresh_hi;
 float FrcnnParam::bg_thresh_lo;
 bool FrcnnParam::use_flipped;
-int FrcnnParam::use_hist_equalize;//fyk
+// fyk
+int FrcnnParam::use_hist_equalize;
+bool FrcnnParam::use_haze_free;
+bool FrcnnParam::use_retinex;
+float FrcnnParam::data_jitter;
+float FrcnnParam::data_saturation;
+float FrcnnParam::data_hue;
+float FrcnnParam::data_exposure;
 
 // Train bounding-box regressors
 bool FrcnnParam::bbox_reg; // Unuse

@@ -9,7 +9,7 @@
 #include "caffe/util/benchmark.hpp"
 #include "caffe/util/signal_handler.h"
 #include "caffe/FRCNN/util/frcnn_vis.hpp"
-#include "caffe/FRCNN/util/equalize_hist.hpp"
+#include "caffe/FRCNN/data_enhance/histgram/equalize_hist.hpp"
 #include "api/api.hpp"
 #include <chrono>
 using caffe::Frcnn::FrcnnParam;

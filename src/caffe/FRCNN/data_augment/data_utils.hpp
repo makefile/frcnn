@@ -39,7 +39,7 @@ image make_image(int w, int h, int c);
 void free_image(image m);
 void flip_image(image a);
 void fill_image(image m, float s);
-image load_image_color(char *filename, int w, int h);
+image load_image_color(const char *filename, int w, int h);
 void show_image_cv(image p, const char *name, IplImage *disp);
 void show_image(image p, const char *name);
 void save_image_jpg(image p, const char *name);

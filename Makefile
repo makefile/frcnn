@@ -365,6 +365,17 @@ ifeq ($(WITH_PYTHON_LAYER), 1)
 	LIBRARIES += $(PYTHON_LIBRARIES)
 endif
 
+# fyk add
+# Add options for layer modules
+LAYER_MODULE_PREFIX ?= "lib"
+COMMON_FLAGS += -DLAYER_MODULE_PREFIX="\"$(LAYER_MODULE_PREFIX)\""
+LAYER_MODULE_SUFFIX ?= ".so"
+COMMON_FLAGS += -DLAYER_MODULE_SUFFIX="\"$(LAYER_MODULE_SUFFIX)\""
+DEFAULT_LAYER_PATH ?= $(DISTRIBUTE_DIR)/lib/caffe/layers
+COMMON_FLAGS += -DDEFAULT_LAYER_PATH="\"$(DEFAULT_LAYER_PATH)\""
+LIBRARIES += dl
+# fyk end
+
 # BLAS configuration (default = ATLAS)
 BLAS ?= atlas
 ifeq ($(BLAS), mkl)

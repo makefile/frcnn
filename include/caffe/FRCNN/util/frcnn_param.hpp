@@ -35,10 +35,10 @@ public:
   // fyk: data random augment
   static bool use_flipped;
   // fyk: same as YOLO(darknet) param
-  static int data_jitter;
-  static int data_hue;
-  static int data_saturation;
-  static int data_exposure;
+  static float data_jitter;
+  static float data_hue;
+  static float data_saturation;
+  static float data_exposure;
 
   // Train bounding-box regressors
   static bool bbox_reg;
