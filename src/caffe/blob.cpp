@@ -553,9 +553,37 @@ void Blob<float>::ToProto(BlobProto* proto, bool write_diff) const {
   }
 }
 
+//for SSD
+template <> void Blob<bool>::scale_diff(bool scale_factor) {
+  NOT_IMPLEMENTED;
+}
+template <> void Blob<bool>::scale_data(bool scale_factor) {
+  NOT_IMPLEMENTED;
+}
+template <> bool Blob<bool>::sumsq_diff() const {
+  NOT_IMPLEMENTED;
+  return 0;
+}
+template <> bool Blob<bool>::sumsq_data() const {
+  NOT_IMPLEMENTED;
+  return 0;
+}
+template <> bool Blob<bool>::asum_diff() const {
+  NOT_IMPLEMENTED;
+  return 0;
+}
+template <> bool Blob<bool>::asum_data() const {
+  NOT_IMPLEMENTED;
+  return 0;
+}
+template <> void Blob<bool>::Update() { NOT_IMPLEMENTED; }
+
+//end
+
 INSTANTIATE_CLASS(Blob);
 template class Blob<int>;
 template class Blob<unsigned int>;
+template class Blob<bool>;//for SSD
 
 }  // namespace caffe
 
