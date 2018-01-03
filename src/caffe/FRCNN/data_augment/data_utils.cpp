@@ -303,15 +303,15 @@ image resize_image(image im, int w, int h)
 
 //transform the boxes label as we do to image data. 
 //notice that the boxes label is normalized before this input.
+//the bad boxes will be annotated as w,h=-1
 void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip)
 {
 	int i;
 	for (i = 0; i < n; ++i){
 		if (boxes[i].x == 0 && boxes[i].y == 0) { // fyk: this will not affect the network learning
-			boxes[i].x = 999999;
-			boxes[i].y = 999999;
-			boxes[i].w = 999999;
-			boxes[i].h = 999999;
+			boxes[i].w = -1;
+			boxes[i].h = -1;
+			std::cout << "=======WARNING====correct_boxes=====this shouldn't happen!" << std::endl;
 			continue;
 		}
 		boxes[i].left = boxes[i].left  * sx - dx;
@@ -337,7 +337,14 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
 
 		boxes[i].w = constrain(0, 1, boxes[i].w);
 		boxes[i].h = constrain(0, 1, boxes[i].h);
-//		std::cout << "correct_boxes" << boxes[i].x << ' ' << boxes[i].y << ' ' << boxes[i].w << ' ' << boxes[i].h << std::endl;
+		//		std::cout << "correct_boxes" << boxes[i].x << ' ' << boxes[i].y << ' ' << boxes[i].w << ' ' << boxes[i].h << std::endl;
+		if (boxes[i].left >= boxes[i].right || boxes[i].top >= boxes[i].bottom)
+		{
+			// fyk: some border situation maybe cannot be handled properly
+			boxes[i].w = -1;
+			boxes[i].h = -1;
+			continue;
+		}
 	}
 }
 
@@ -372,7 +379,7 @@ image ipl_to_image(IplImage* src)
 	return out;
 }
 
-image cvmat_to_image(cv::Mat &mat_img) {
+image cvmat_to_image(cv::Mat &mat) {
 	/**
 	NOTICE that IplImage's widthStep is different from cv::Mat,see http://answers.opencv.org/question/20407/matstep-iplimagewidthstep/
 	so convert from cv::Mat to IplImage then use widthStep will get wrong result
@@ -383,6 +390,11 @@ image cvmat_to_image(cv::Mat &mat_img) {
 	image ret = ipl_to_image(img);
 	//cvReleaseImage(&img);
 	**/
+	cv::Mat mat_img = mat;
+	if (mat.type() != CV_32FC3)
+	{
+		mat.convertTo(mat_img, CV_32FC3);
+	}
 	int h = mat_img.rows;
 	int w = mat_img.cols;
 	int c = mat_img.channels();
@@ -390,12 +402,12 @@ image cvmat_to_image(cv::Mat &mat_img) {
 	image im = make_image(w, h, c);
 	int i, j, k;
 	for (i = 0; i < h; ++i){
-	  for (j = 0; j < w; ++j){
-	    for (k = 0; k < c; ++k){
-	    	int cv_offset = (i * w + j) * c;
-		im.data[k*w*h + i*w + j] = data[cv_offset + k] / 255.;
-	    }
-	  }
+		for (j = 0; j < w; ++j){
+			for (k = 0; k < c; ++k){
+				int cv_offset = (i * w + j) * c;
+				im.data[k*w*h + i*w + j] = data[cv_offset + k] / 255.;
+			}
+		}
 	}
 	rgbgr_image(im);//convert from BGR to RGB
 
@@ -434,9 +446,9 @@ image load_image_cv(const char *filename, int channels)
 	if ((src = cvLoadImage(filename, flag)) == 0)
 	{
 		fprintf(stderr, "Cannot load image \"%s\"\n", filename);
-//		char buff[256];
-//		sprintf_s(buff, "echo %s >> bad.list", filename);
-//		system(buff);
+		//		char buff[256];
+		//		sprintf_s(buff, "echo %s >> bad.list", filename);
+		//		system(buff);
 		return make_image(10, 10, 3);
 		//exit(0);
 	}
@@ -447,11 +459,11 @@ image load_image_cv(const char *filename, int channels)
 
 image load_image(const char *filename, int w, int h, int c)
 {
-//#ifdef OPENCV
+	//#ifdef OPENCV
 	image out = load_image_cv(filename, c);
-//#else
-//	image out = load_image_stb(filename, c);
-//#endif
+	//#else
+	//	image out = load_image_stb(filename, c);
+	//#endif
 
 	if ((h && w) && (h != out.h || w != out.w)){
 		image resized = resize_image(out, w, h);
@@ -477,7 +489,7 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 	sprintf(buff, "%s", name);
 
 	int step = disp->widthStep;
-//	cvNamedWindow(buff, CV_WINDOW_NORMAL);
+	//	cvNamedWindow(buff, CV_WINDOW_NORMAL);
 	cvNamedWindow(buff, CV_WINDOW_AUTOSIZE);
 	//cvMoveWindow(buff, 100*(windows%10) + 200*(windows/10), 100*(windows%10));
 	//++windows;
@@ -489,16 +501,16 @@ void show_image_cv(image p, const char *name, IplImage *disp)
 		}
 	}
 	/*if (0){
-		int w = 448;
-		int h = w*p.h / p.w;
-		if (h > 1000){
-			h = 1000;
-			w = h*p.w / p.h;
-		}
-		IplImage *buffer = disp;
-		disp = cvCreateImage(cvSize(w, h), buffer->depth, buffer->nChannels);
-		cvResize(buffer, disp, CV_INTER_LINEAR);
-		cvReleaseImage(&buffer);
+	int w = 448;
+	int h = w*p.h / p.w;
+	if (h > 1000){
+	h = 1000;
+	w = h*p.w / p.h;
+	}
+	IplImage *buffer = disp;
+	disp = cvCreateImage(cvSize(w, h), buffer->depth, buffer->nChannels);
+	cvResize(buffer, disp, CV_INTER_LINEAR);
+	cvReleaseImage(&buffer);
 	}
 	*/
 	cvShowImage(buff, disp);
@@ -512,8 +524,8 @@ void show_image(image p, const char *name)
 	show_image_cv(copy, name, disp);
 	free_image(copy);
 	cvReleaseImage(&disp);
-//	fprintf(stderr, "Not compiled with OpenCV, saving to %s.png instead\n", name);
-//	save_image(p, name);
+	//	fprintf(stderr, "Not compiled with OpenCV, saving to %s.png instead\n", name);
+	//	save_image(p, name);
 }
 void save_image_jpg(image p, const char *name)
 {
@@ -547,11 +559,11 @@ cv::Mat image2cvmat(image p)
 	IplImage *disp = cvCreateImage(cvSize(p.w, p.h), IPL_DEPTH_8U, p.c);
 	int step = disp->widthStep;
 	for (y = 0; y < p.h; ++y){
-		for (x = 0; x < p.w; ++x){
-			for (k = 0; k < p.c; ++k){
-				disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(copy, x, y, k) * 255);
-			}
-		}
+	for (x = 0; x < p.w; ++x){
+	for (k = 0; k < p.c; ++k){
+	disp->imageData[y*step + x*p.c + k] = (unsigned char)(get_pixel(copy, x, y, k) * 255);
+	}
+	}
 	}
 	cv::Mat mat = cv::cvarrToMat(disp, true);//copyData=true
 	cvReleaseImage(&disp);
@@ -561,9 +573,9 @@ cv::Mat image2cvmat(image p)
 	cv::Mat mat = cv::Mat::zeros(cv::Size(p.h, p.w), CV_32FC3);
 	float *data = (float *)mat.data;
 	for (y = 0; y < p.h; ++y)
-	  for (x = 0; x < p.w; ++x)
-	    for (k = 0; k < p.c; ++k)
-	      data[(y * p.w + x) * p.c + k] = get_pixel(copy, x, y, k) * 255;
+		for (x = 0; x < p.w; ++x)
+			for (k = 0; k < p.c; ++k)
+				data[(y * p.w + x) * p.c + k] = get_pixel(copy, x, y, k) * 255;
 	return mat;
 }
 image rotate_image(image im, float rad)
@@ -577,10 +589,11 @@ image rotate_image(image im, float rad)
 			for (x = 0; x < im.w; ++x){
 				float rx = cos(rad)*(x - cx) - sin(rad)*(y - cy) + cx;
 				float ry = sin(rad)*(x - cx) + cos(rad)*(y - cy) + cy;
-				if (rx < 0 || ry < 0 || rx > im.w || ry > im.h)
+				if (rx < 0 || ry < 0 || rx >= im.w || ry >= im.h)
 				{
 					set_pixel(rot, x, y, c, 0.5); // fill_image(rot, 0.5);
-				} else
+				}
+				else
 				{
 					float val = bilinear_interpolate(im, rx, ry, c);
 					set_pixel(rot, x, y, c, val);
@@ -645,28 +658,56 @@ image data_augment(image orig, box_label *boxes, int num_boxes, int w, int h, in
 
 	return sized;
 }
+// return CV_32FC3 image
 cv::Mat data_augment(cv::Mat &src, std::vector<std::vector<float> > &rois,
-  int flip, float jitter, float hue, float saturation, float exposure) {
+	int flip, float jitter, float hue, float saturation, float exposure) {
 	int num_boxes = rois.size();
 	box_label *boxes = (box_label*)calloc(num_boxes, sizeof(box_label));
 	convert_box(rois, boxes, src.cols, src.rows);
 	image orig = cvmat_to_image(src);
 	image result = data_augment(orig, boxes, num_boxes, 0, 0, flip, jitter, hue, saturation, exposure);
-	rois = convert_box(boxes, num_boxes, src.cols, src.rows);
+//	rois = convert_box(boxes, num_boxes, src.cols, src.rows);
+	rois = convert_box(boxes, num_boxes, result.w, result.h);
 	free(boxes);
 	free_image(orig);
 	return image2cvmat(result);
 }
-image rotate_augment(float angle, image im_in, box_label *label_in, box_label *label_out, int num_boxes)
+void rotate180(box_label *label_in, box_label *label_out, int num_boxes)
 {
-	image rot = rotate_image(im_in, angle);
+	for (int i = 0; i < num_boxes; i++)
+	{
+		box_label b = label_in[i];
+		label_out[i].x = 1. - b.x;
+		label_out[i].y = 1. - b.y;
+		label_out[i].w = b.w;
+		label_out[i].h = b.h;
+		label_out[i].left  = label_out[i].x - label_out[i].w / 2;
+		label_out[i].right = label_out[i].x + label_out[i].w / 2;
+		label_out[i].top = label_out[i].y - label_out[i].h / 2;
+		label_out[i].bottom = label_out[i].y + label_out[i].h / 2;
+
+		label_out[i].left = constrain(0, 1, label_out[i].left);
+		label_out[i].right = constrain(0, 1, label_out[i].right);
+		label_out[i].top = constrain(0, 1, label_out[i].top);
+		label_out[i].bottom = constrain(0, 1, label_out[i].bottom);
+	}
+}
+// only support 90,180 etc up-right degrees,range(0~2pi)
+image rotate_augment(float rad, image im_in, box_label *label_in, box_label *label_out, int num_boxes)
+{
+	image rot = rotate_image(im_in, rad);
+	if (fabs(rad - M_PI) < 0.001)
+	{
+		rotate180(label_in, label_out, num_boxes);
+		return rot;
+	}
 	// handle labels
 	for (int i = 0; i < num_boxes; i++)
 	{
 		box_label b = label_in[i];
-		
-		float a_cos = cos(angle);
-		float a_sin = - sin(angle);// anti clock-wise
+
+		float a_cos = cos(rad);
+		float a_sin = -sin(rad);// anti clock-wise
 		float cx = im_in.w / 2.;//when calc rect after rotate,cannot use relative value.
 		float cy = im_in.h / 2.;
 		cv::Point2f pts[4];
@@ -674,7 +715,7 @@ image rotate_augment(float angle, image im_in, box_label *label_in, box_label *l
 		{
 			float rx = (i < 2 ? b.left : b.right)*im_in.w;
 			float ry = (i % 3 == 0 ? b.top : b.bottom)*im_in.h;
-			float x = - (ry - cy) * a_sin + (rx - cx) * a_cos + cx;
+			float x = -(ry - cy) * a_sin + (rx - cx) * a_cos + cx;
 			float y = (ry - cy) * a_cos + (rx - cx) * a_sin + cy;
 			pts[i] = cv::Point2f(x / im_in.w, y / im_in.h);
 		}
@@ -682,6 +723,8 @@ image rotate_augment(float angle, image im_in, box_label *label_in, box_label *l
 		float max_x = std::max(pts[0].x, pts[1].x);
 		float min_y = std::min(pts[1].y, pts[2].y);
 		float max_y = std::max(pts[1].y, pts[2].y);
+
+		label_out[i].id = label_in[i].id;
 
 		label_out[i].left = min_x;
 		label_out[i].right = max_x;
@@ -722,16 +765,20 @@ void convert_box(std::vector<std::vector<float> > &rois, box_label *out_boxes, f
 }
 std::vector<std::vector<float> > convert_box(box_label *boxes, int num_boxes, float img_width, float img_height)
 {
-	std::vector<std::vector<float> > rois(num_boxes);
+	std::vector<std::vector<float> > rois;
 	for (int i = 0; i < num_boxes; i++)
 	{
+		if (boxes[i].w <= 0 || boxes[i].h <= 0)
+		{
+			continue; // filter out the boxes that outside border after image augmentation
+		}
 		std::vector<float> t(5);
 		t[0] = (boxes[i].id);
 		t[1] = (boxes[i].left * img_width);
 		t[2] = (boxes[i].top * img_height);
 		t[3] = (boxes[i].right * img_width);
 		t[4] = (boxes[i].bottom * img_height);
-		rois[i] = t;
+		rois.push_back(t);
 	}
 	return rois;
 }

@@ -84,7 +84,7 @@ def prepare_data(args):
                 gt_line.remove('')
             assert (len(gt_line) == 6), 'Ground Truth : label x1 y1 x2 y2 diff, not {}'.format(gt_line)
             diff = int(gt_line[5])
-            if diff == 0:
+            if True: # diff == 0:
                 gt_current_box.append( np.array([float(gt_line[0]), float(gt_line[1]),
                     float(gt_line[2]), float(gt_line[3]), float(gt_line[4])]) )
 
@@ -149,6 +149,8 @@ if __name__ == '__main__':
                    (BBGT[:, 2] - BBGT[:, 0] + 1.) *
                    (BBGT[:, 3] - BBGT[:, 1] + 1.) - inters)
             overlaps = inters / uni
+            if len(overlaps) == 0:
+                print("error in %d-th image, predict:%d,GT:%d"%(index,len(boxes),len(BBGT)))
             ovmax = np.max(overlaps)
             jmax = np.argmax(overlaps)
             if ovmax > ovthresh:

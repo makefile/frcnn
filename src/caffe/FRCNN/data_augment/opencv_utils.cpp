@@ -56,7 +56,12 @@ void cvDrawDottedRect(Mat& mat_img, Point pt1, Point pt2, Scalar color, int leng
 	//|	  | 
 	//4---3 
 	//	1 --> pt1, 2 --> tempPt1, 3 --> pt2, 4 --> tempPt2 
-	IplImage ix = mat_img;
+	Mat mat = mat_img;
+	if (mat_img.type() != CV_8UC3)
+	{
+		mat_img.convertTo(mat, CV_8UC3);
+	}
+	IplImage ix = mat;
 	IplImage* img = &ix; //share data,only copy header
 	CvPoint tempPt1 = cvPoint(pt2.x, pt1.y);
 	CvPoint tempPt2 = cvPoint(pt1.x, pt2.y);
@@ -64,6 +69,7 @@ void cvDrawDottedRect(Mat& mat_img, Point pt1, Point pt2, Scalar color, int leng
 	cvDrawDottedLine(img, tempPt1, pt2, color, thickness, lenghOfDots, lineType, 0);
 	cvDrawDottedLine(img, pt2, tempPt2, color, thickness, lenghOfDots, lineType, 1);
 	cvDrawDottedLine(img, tempPt2, pt1, color, thickness, lenghOfDots, lineType, 1);
+	mat_img = mat;
 }
 void cvDrawDottedRect(IplImage* img, CvRect rect, CvScalar color, int lenghOfDots, int thickness, int lineType)
 {	//1---2 

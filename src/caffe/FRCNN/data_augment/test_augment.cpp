@@ -1,60 +1,93 @@
 
 #include "data_utils.hpp"
 using namespace cv;
-
-void main_test_augment_and_rotate()
+std::vector<std::vector<float> > get_rois()
 {
-	//char *img_path = "E:/datasets/NWPU/ship/ship_022.jpg";
-	string img_path = "test.jpg";
-	float img_width = 256;
-	float img_height = 256;
-	int resize_h = 0;
-	int resize_w = 0;
-	int flip = 0;// rand() % 2;
+	std::vector<float> tmp{ 
+		4, 202, 139, 254, 246,
+		4, 268, 146, 316, 303,
+		4, 329, 151, 366, 295,
+		4, 381, 148, 411, 291,
+		4, 422, 150, 454, 282,
+		4, 466, 155, 491, 274 };//label x1 y1 x2 y2
+	std::vector<std::vector<float> > rois; 
+	for (int i = 0; i < tmp.size(); i += 5)
+	{
+		std::vector<float> tmp1 = { tmp[i], tmp[i + 1], tmp[i + 2], tmp[i + 3], tmp[i + 4] };
+		rois.push_back(tmp1);
+	}
+	return rois;
+}
+void vis_32f_mat(std::string winname, cv::Mat mat)
+{
+	cv::Mat tmp_mat;
+	mat.convertTo(tmp_mat, CV_8UC3);
+	cv::imshow(winname, tmp_mat);
+}
+void print_rois(std::vector<std::vector<float> > rois)
+{
+	for (int i = 0; i < rois.size(); i++)
+	{
+		std::cout << rois[i][0] << ' ' << rois[i][1] << ' ' << rois[i][2] << ' ' << rois[i][3] << ' ' << rois[i][4] << std::endl;
+	}
+	std::cout << std::endl;
+}
+void test_main()
+{
+	char *img_path = "test.jpg";
+	
+	int flip = 1;// rand() % 2;
 	float jitter = 0.2;
 	float hue = .1;
 	float saturation = 1.5;// .75;
 	float exposure = 1.5;//.75;
 	set_rand_seed(-1);
-	image orig = load_image_color(img_path.c_str(), 0, 0);
-	
-	std::vector<std::vector<float> > rois;
-	std::vector<float> tmp{ 1, 80, 80, 120, 200 };//label x1 y1 x2 y2
-	rois.push_back(tmp);
+	image orig = load_image_color(img_path, 0, 0);
+	float img_width = orig.w;
+	float img_height = orig.h;
+
+	std::vector<std::vector<float> > rois = get_rois();
+	print_rois(rois);
 	int num_boxes = rois.size();
 	box_label *boxes = (box_label*)calloc(num_boxes, sizeof(box_label));
 	convert_box(rois, boxes, img_width, img_height);
 
 	cv::Mat origmat = image2cvmat(orig);
 	//	show_image(orig, "orig");
-	cvDrawDottedRect(origmat, cv::Point(rois[0][1], rois[0][2]), cv::Point(rois[0][3], rois[0][4]), cv::Scalar(200, 0, 0), 6, 2);
-	cv::imshow("origmat", origmat);
+	for (int i = 0; i < rois.size(); i++)
+	{
+		cvDrawDottedRect(origmat, cv::Point(rois[i][1], rois[i][2]), cv::Point(rois[i][3], rois[i][4]), cv::Scalar(200, 0, 0), 6, 1);
+	}
+	vis_32f_mat("orig", origmat);
 
 	// ratate, angle range(0,2*PI)
 //	float angle = 3* M_PI / 4;//anti-clockwise direction
-	float angle = M_PI_2;//anti-clockwise direction
-	if (angle > 0)
+	float angle = - M_PI_2;
+//	float angle = M_PI;// M_PI_2;//anti-clockwise direction
+	if (angle != 0)
 	{
 		box_label *boxes_new = (box_label*)calloc(num_boxes, sizeof(box_label));
 		image rot = rotate_augment(angle, orig, boxes, boxes_new, num_boxes);
 		//	show_image(rot, "rot");
 		cv::Mat mat = image2cvmat(rot);
-		std::vector<std::vector<float> > rois_new = convert_box(boxes_new, num_boxes, img_width, img_height);
-		cvDrawDottedRect(mat, cv::Point(rois_new[0][1], rois_new[0][2]), cv::Point(rois_new[0][3], rois_new[0][4]), cv::Scalar(200, 0, 0), 6, 2);
-//		cvDrawDottedRect(mat, cv::Point(rois[0][0], rois[0][1]), cv::Point(rois[0][2], rois[0][3]), cv::Scalar(200, 0, 0), 6, 2);
-		cv::imshow("rot", mat);
+		std::vector<std::vector<float> > rois_new = convert_box(boxes_new, num_boxes, rot.w, rot.h);
+		print_rois(rois_new);
+		for (int i = 0; i < rois_new.size(); i++)
+		{
+			cvDrawDottedRect(mat, cv::Point(rois_new[i][1], rois_new[i][2]), cv::Point(rois_new[i][3], rois_new[i][4]), cv::Scalar(200, 0, 0), 6, 1);
+		}
+		vis_32f_mat("rot", mat);
 	}
 
 	//augment
-	image result = data_augment(orig, boxes, num_boxes, resize_w, resize_h, flip, jitter, hue, saturation, exposure);
-	rois = convert_box(boxes, num_boxes, img_width, img_height);
+	Mat result = data_augment(origmat, rois, flip, jitter, hue, saturation, exposure);
+	print_rois(rois);
 	free(boxes);
-//	show_image(result, "result");
-	cv::Mat mat = image2cvmat(result);
-//	cvDrawDottedRect(mat, cv::Point(10, 10), cv::Point(90, 90), cv::Scalar(200, 0, 0), 6, 2);
-//	std::cout << rois[0][0] << ' ' << rois[0][1] << ' ' << rois[0][2] << ' ' << rois[0][3] << std::endl;
-	cvDrawDottedRect(mat, cv::Point(rois[0][1], rois[0][2]), cv::Point(rois[0][3], rois[0][4]), cv::Scalar(200, 0, 0), 6, 2);
-//	cv::imshow ("dashed result", mat);
+	for (int i = 0; i < rois.size(); i++)
+	{
+		cvDrawDottedRect(result, cv::Point(rois[i][1], rois[i][2]), cv::Point(rois[i][3], rois[i][4]), cv::Scalar(0, 0, 200), 6, 1);
+	}
+	vis_32f_mat("aug", result);
 	cvWaitKey(0);
 	free_image(orig);
 }

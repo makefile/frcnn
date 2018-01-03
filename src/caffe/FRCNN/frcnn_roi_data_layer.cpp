@@ -192,7 +192,7 @@ unsigned int FrcnnRoiDataLayer<Dtype>::PrefetchRand() {
 template <typename Dtype>
 void FrcnnRoiDataLayer<Dtype>::CheckResetRois(vector<vector<float> > &rois, const string image_path, const float cols, const float rows, const float im_scale) {
   for (int i = 0; i < rois.size(); i++) {
-    bool ok = rois[i][DataPrepare::X1] >= 0 && rois[i][DataPrepare::Y1] >= 0 && 
+    bool ok = rois[i][DataPrepare::X1] > 0 && rois[i][DataPrepare::Y1] > 0 && 
         rois[i][DataPrepare::X2] < cols && rois[i][DataPrepare::Y2] < rows;
     if (ok == false) {
       DLOG(INFO) << "Roi Data Check Failed : " << image_path << " [" << i << "]";
@@ -240,7 +240,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   CHECK(lines_id_ < lines_.size() && lines_id_ >= 0) << "select error line id : " << lines_id_;
   int index = lines_[lines_id_];
   bool do_mirror = mirror && PrefetchRand() % 2 && this->phase_ == TRAIN;
-  bool do_augment = do_mirror;
+  bool do_augment = PrefetchRand() % 2 && this->phase_ == TRAIN;
   float max_short = scales[PrefetchRand() % scales.size()];
 
   read_time += timer.MicroSeconds();
@@ -260,9 +260,10 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   }
   cv::Mat src;
   cv_img.convertTo(src, CV_32FC3);
-  if (do_mirror) {
-    cv::flip(src, src, 1); // Flip
-  }
+  // leave this to data augment,or the code is hard to orgnize
+  //if (do_mirror) {
+  //  cv::flip(src, src, 1); // Flip
+  //}
   CHECK(src.isContinuous()) << "Warning : cv::Mat src is not Continuous !";
   CHECK_EQ(src.depth(), CV_32F) << "Image data type must be float 32 type";
   CHECK_EQ(src.channels(), 3) << "Image data type must be 3 channels";
@@ -281,11 +282,17 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   }
   vector<vector<float> > rois = roi_database_[index];
   if (do_augment) {
-    src = data_augment(src, rois, 0, FrcnnParam::data_jitter, FrcnnParam::data_hue, FrcnnParam::data_saturation, FrcnnParam::data_exposure);
+    cv::Mat mat_aug = data_augment(src, rois, do_mirror, FrcnnParam::data_jitter, FrcnnParam::data_hue, FrcnnParam::data_saturation, FrcnnParam::data_exposure);
+    // doing jitter may exclude the rois, and Faster R-CNN cannot handle the 0-roi data currently
+    if (rois.size() > 0) {
+      src = mat_aug;
+    }
   }
   //fyk: do haze free,NOTICE that data enhancement should only be done one, current prioty is haze-free > retinex > hist_equalize
   if (FrcnnParam::use_haze_free) {
+std::cout << "FrcnnParam::use_haze_free" << std::endl;
 	src = remove_haze(src);
+    src.convertTo(src, CV_32FC3);
   }else if (FrcnnParam::use_retinex) {
   	// NOT_IMPLEMENTED
   }else{
@@ -344,9 +351,9 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   CheckResetRois(rois, image_database_[index], cv_img.cols, cv_img.rows, im_scale);
   
   // Flip
-  if (do_mirror) {
-    FlipRois(rois, cv_img.cols);
-  }
+  //if (do_mirror) {
+  //  FlipRois(rois, cv_img.cols);
+  //}
 
   CHECK_EQ(rois.size(), channels-1);
   for (int i = 1; i < channels; i++) {
