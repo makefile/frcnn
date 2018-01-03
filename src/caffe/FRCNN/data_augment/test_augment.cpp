@@ -19,7 +19,7 @@ void main_test_augment_and_rotate()
 	image orig = load_image_color(img_path.c_str(), 0, 0);
 	
 	std::vector<std::vector<float> > rois;
-	std::vector<float> tmp{ 80, 80, 120, 200, 1 };
+	std::vector<float> tmp{ 1, 80, 80, 120, 200 };//label x1 y1 x2 y2
 	rois.push_back(tmp);
 	int num_boxes = rois.size();
 	box_label *boxes = (box_label*)calloc(num_boxes, sizeof(box_label));
@@ -27,7 +27,7 @@ void main_test_augment_and_rotate()
 
 	cv::Mat origmat = image2cvmat(orig);
 	//	show_image(orig, "orig");
-	cvDrawDottedRect(origmat, cv::Point(rois[0][0], rois[0][1]), cv::Point(rois[0][2], rois[0][3]), cv::Scalar(200, 0, 0), 6, 2);
+	cvDrawDottedRect(origmat, cv::Point(rois[0][1], rois[0][2]), cv::Point(rois[0][3], rois[0][4]), cv::Scalar(200, 0, 0), 6, 2);
 	cv::imshow("origmat", origmat);
 
 	// ratate, angle range(0,2*PI)
@@ -40,7 +40,7 @@ void main_test_augment_and_rotate()
 		//	show_image(rot, "rot");
 		cv::Mat mat = image2cvmat(rot);
 		std::vector<std::vector<float> > rois_new = convert_box(boxes_new, num_boxes, img_width, img_height);
-		cvDrawDottedRect(mat, cv::Point(rois_new[0][0], rois_new[0][1]), cv::Point(rois_new[0][2], rois_new[0][3]), cv::Scalar(200, 0, 0), 6, 2);
+		cvDrawDottedRect(mat, cv::Point(rois_new[0][1], rois_new[0][2]), cv::Point(rois_new[0][3], rois_new[0][4]), cv::Scalar(200, 0, 0), 6, 2);
 //		cvDrawDottedRect(mat, cv::Point(rois[0][0], rois[0][1]), cv::Point(rois[0][2], rois[0][3]), cv::Scalar(200, 0, 0), 6, 2);
 		cv::imshow("rot", mat);
 	}
@@ -53,7 +53,7 @@ void main_test_augment_and_rotate()
 	cv::Mat mat = image2cvmat(result);
 //	cvDrawDottedRect(mat, cv::Point(10, 10), cv::Point(90, 90), cv::Scalar(200, 0, 0), 6, 2);
 //	std::cout << rois[0][0] << ' ' << rois[0][1] << ' ' << rois[0][2] << ' ' << rois[0][3] << std::endl;
-	cvDrawDottedRect(mat, cv::Point(rois[0][0], rois[0][1]), cv::Point(rois[0][2], rois[0][3]), cv::Scalar(200, 0, 0), 6, 2);
+	cvDrawDottedRect(mat, cv::Point(rois[0][1], rois[0][2]), cv::Point(rois[0][3], rois[0][4]), cv::Scalar(200, 0, 0), 6, 2);
 //	cv::imshow ("dashed result", mat);
 	cvWaitKey(0);
 	free_image(orig);

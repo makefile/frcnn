@@ -289,26 +289,29 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   }else if (FrcnnParam::use_retinex) {
   	// NOT_IMPLEMENTED
   }else{
-  //fyk : do equlize_hist,only for 3-channel
-  int he_case = FrcnnParam::use_hist_equalize;
-  switch(he_case) {
-  case 1:
-        src = equalizeIntensityHist(src);
-        break;
-  case 2:
-        src = equalizeChannelHist(src);
-        break;
-  default:
-        break;
-  }
+    //fyk : do equlize_hist,only for 3-channel
+    int he_case = FrcnnParam::use_hist_equalize;
+    cv::Mat tmp_mat;
+    src.convertTo(tmp_mat, CV_8UC3);
+    switch(he_case) {
+    case 1:
+          src = equalizeIntensityHist(tmp_mat);
+          break;
+    case 2:
+          src = equalizeChannelHist(tmp_mat);
+          break;
+    default:
+          break;
+    }
+    if(he_case > 0) src.convertTo(src, CV_32FC3);
   }
   //fyk end
   float im_scale = Frcnn::get_scale_factor(src.cols, src.rows, max_short, max_long_);
   //fyk: check decimation or zoom,use different method
-  if( src.rows > im_scale || src.cols > im_scale )
-  	cv::resize(src, src, cv::Size(), im_scale, im_scale, cv::INTER_AREA );
-  else //fyk end
-  cv::resize(src, src, cv::Size(), im_scale, im_scale);
+  if( im_scale < 1 )
+    cv::resize(src, src, cv::Size(), im_scale, im_scale, cv::INTER_AREA );
+  else
+    cv::resize(src, src, cv::Size(), im_scale, im_scale);
   // resize data
   batch->data_.Reshape(batch_size, 3, src.rows, src.cols);
   Dtype *top_data = batch->data_.mutable_cpu_data();

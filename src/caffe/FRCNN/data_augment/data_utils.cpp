@@ -341,6 +341,7 @@ void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float 
 	}
 }
 
+void rgbgr_image(image im);
 //void show_image_cv(image p, const char *name, IplImage *disp);
 void ipl_into_image(IplImage* src, image im)
 {
@@ -358,6 +359,7 @@ void ipl_into_image(IplImage* src, image im)
 			}
 		}
 	}
+	rgbgr_image(im);//convert from BGR to RGB
 }
 
 image ipl_to_image(IplImage* src)
@@ -371,9 +373,33 @@ image ipl_to_image(IplImage* src)
 }
 
 image cvmat_to_image(cv::Mat &mat_img) {
-	IplImage ix = mat_img;
+	/**
+	NOTICE that IplImage's widthStep is different from cv::Mat,see http://answers.opencv.org/question/20407/matstep-iplimagewidthstep/
+	so convert from cv::Mat to IplImage then use widthStep will get wrong result
+	IplImage ix = IplImage(mat_img);
 	IplImage* img = &ix; //share data,only copy header
-	return ipl_to_image(img);
+	cvSaveImage("augment-iplimage.jpg", img);
+	//IplImage* img = cvCloneImage(&ix);
+	image ret = ipl_to_image(img);
+	//cvReleaseImage(&img);
+	**/
+	int h = mat_img.rows;
+	int w = mat_img.cols;
+	int c = mat_img.channels();
+	float *data = (float *)mat_img.data;
+	image im = make_image(w, h, c);
+	int i, j, k;
+	for (i = 0; i < h; ++i){
+	  for (j = 0; j < w; ++j){
+	    for (k = 0; k < c; ++k){
+	    	int cv_offset = (i * w + j) * c;
+		im.data[k*w*h + i*w + j] = data[cv_offset + k] / 255.;
+	    }
+	  }
+	}
+	rgbgr_image(im);//convert from BGR to RGB
+
+	return im;
 }
 
 image copy_image(image p)
@@ -416,7 +442,6 @@ image load_image_cv(const char *filename, int channels)
 	}
 	image out = ipl_to_image(src);
 	cvReleaseImage(&src);
-	rgbgr_image(out);//convert from BGR to RGB
 	return out;
 }
 
@@ -518,7 +543,7 @@ cv::Mat image2cvmat(image p)
 	image copy = copy_image(p);
 	if (p.c == 3) rgbgr_image(copy);
 	int x, y, k;
-
+	/*
 	IplImage *disp = cvCreateImage(cvSize(p.w, p.h), IPL_DEPTH_8U, p.c);
 	int step = disp->widthStep;
 	for (y = 0; y < p.h; ++y){
@@ -531,6 +556,14 @@ cv::Mat image2cvmat(image p)
 	cv::Mat mat = cv::cvarrToMat(disp, true);//copyData=true
 	cvReleaseImage(&disp);
 	free_image(copy);
+	*/
+	//NOTICE that use cv::cvarrToMat and the mat maybe type of 8UC3,and we must convert it to 32FC3,if we want to use it as float value.
+	cv::Mat mat = cv::Mat::zeros(cv::Size(p.h, p.w), CV_32FC3);
+	float *data = (float *)mat.data;
+	for (y = 0; y < p.h; ++y)
+	  for (x = 0; x < p.w; ++x)
+	    for (k = 0; k < p.c; ++k)
+	      data[(y * p.w + x) * p.c + k] = get_pixel(copy, x, y, k) * 255;
 	return mat;
 }
 image rotate_image(image im, float rad)
@@ -676,11 +709,11 @@ void convert_box(std::vector<std::vector<float> > &rois, box_label *out_boxes, f
 	int num_boxes = rois.size();
 	for (int i = 0; i < num_boxes; i++)
 	{
-		out_boxes[i].id = rois[i][4];
-		out_boxes[i].left = rois[i][0] / img_width;
-		out_boxes[i].right = rois[i][2] / img_width;
-		out_boxes[i].top = rois[i][1] / img_height;
-		out_boxes[i].bottom = rois[i][3] / img_height;
+		out_boxes[i].id = rois[i][0];
+		out_boxes[i].left = rois[i][1] / img_width;
+		out_boxes[i].right = rois[i][3] / img_width;
+		out_boxes[i].top = rois[i][2] / img_height;
+		out_boxes[i].bottom = rois[i][4] / img_height;
 		out_boxes[i].x = (out_boxes[i].left + out_boxes[i].right) / 2;
 		out_boxes[i].y = (out_boxes[i].top + out_boxes[i].bottom) / 2;
 		out_boxes[i].h = out_boxes[i].bottom - out_boxes[i].top;
@@ -693,11 +726,11 @@ std::vector<std::vector<float> > convert_box(box_label *boxes, int num_boxes, fl
 	for (int i = 0; i < num_boxes; i++)
 	{
 		std::vector<float> t(5);
-		t[0] = (boxes[i].left * img_width);
-		t[1] = (boxes[i].top * img_height);
-		t[2] = (boxes[i].right * img_width);
-		t[3] = (boxes[i].bottom * img_height);
-		t[4] = (boxes[i].id);
+		t[0] = (boxes[i].id);
+		t[1] = (boxes[i].left * img_width);
+		t[2] = (boxes[i].top * img_height);
+		t[3] = (boxes[i].right * img_width);
+		t[4] = (boxes[i].bottom * img_height);
 		rois[i] = t;
 	}
 	return rois;
