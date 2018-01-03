@@ -832,6 +832,20 @@ message ResizeParameter {
   //interpolation for for resizing
   repeated Interp_mode interp_mode = 7;
 }
+
+// The label (display) name and label id.
+message LabelMapItem {
+  // Both name and label are required.
+  optional string name = 1;
+  optional int32 label = 2;
+  // display_name is optional.
+  optional string display_name = 3;
+}
+
+message LabelMap {
+  repeated LabelMapItem item = 1;
+}
+
 // Sample a bbox in the normalized space [0, 1] with provided constraints.
 message Sampler {
   // Minimum scale of the sampled bbox.

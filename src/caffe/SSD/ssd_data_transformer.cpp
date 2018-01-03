@@ -14,18 +14,6 @@
 
 namespace caffe {
 
-void EncodeCVMatToDatum(const cv::Mat& cv_img, const string& encoding,
-                        Datum* datum) {
-  std::vector<uchar> buf;
-  cv::imencode("."+encoding, cv_img, buf);
-  datum->set_data(std::string(reinterpret_cast<char*>(&buf[0]),
-                              buf.size()));
-  datum->set_channels(cv_img.channels());
-  datum->set_height(cv_img.rows);
-  datum->set_width(cv_img.cols);
-  datum->set_encoded(true);
-}
-
 template<typename Dtype>
 SSDDataTransformer<Dtype>::SSDDataTransformer(const TransformationParameter& param,
     Phase phase)

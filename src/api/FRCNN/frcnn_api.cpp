@@ -39,7 +39,8 @@ void Detector::Set_Model(std::string &proto_file, std::string &model_file) {
   for (size_t i = 0; i < layer_names.size(); i++) {
     if (roi_name.size() > layer_names[i].size()) continue;
     if (roi_name == layer_names[i].substr(0, roi_name.size())) {
-      CHECK_EQ(this->roi_pool_layer, -1) << "Previous roi layer : " << this->roi_pool_layer << " : " << layer_names[this->roi_pool_layer];
+      //CHECK_EQ(this->roi_pool_layer, -1) << "Previous roi layer : " << this->roi_pool_layer << " : " << layer_names[this->roi_pool_layer];
+      // fyk: this var of roi_pool_layer is only used by predict_iterate,when I use 2 context roi_pool_layer, I don't use predict_iterate
       this->roi_pool_layer = i;
     }
   }
