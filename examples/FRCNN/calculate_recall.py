@@ -161,4 +161,4 @@ if __name__ == '__main__':
         if index % 1000 == 0:
             print 'Process {}/{} images '.format(index+1, total_image)
 
-    print 'Recall %.4f , %5d / %5d' % (TP / total, TP, total)
+    print 'Recall = %.4f , %5d / %5d' % (TP / total, TP, total)

@@ -570,12 +570,13 @@ cv::Mat image2cvmat(image p)
 	free_image(copy);
 	*/
 	//NOTICE that use cv::cvarrToMat and the mat maybe type of 8UC3,and we must convert it to 32FC3,if we want to use it as float value.
-	cv::Mat mat = cv::Mat::zeros(cv::Size(p.h, p.w), CV_32FC3);
+	cv::Mat mat = cv::Mat::zeros(cv::Size(p.w, p.h), CV_32FC3); // Size(cols,rows)
 	float *data = (float *)mat.data;
 	for (y = 0; y < p.h; ++y)
 		for (x = 0; x < p.w; ++x)
 			for (k = 0; k < p.c; ++k)
 				data[(y * p.w + x) * p.c + k] = get_pixel(copy, x, y, k) * 255;
+        free_image(copy);
 	return mat;
 }
 image rotate_image(image im, float rad)
@@ -631,6 +632,7 @@ image data_augment(image orig, box_label *boxes, int num_boxes, int w, int h, in
 
 	float new_ar = (orig.w + rand_uniform(-dw, dw)) / (orig.h + rand_uniform(-dh, dh));
 	float scale = rand_uniform(.5, 2);// .25 maybe is too small
+	//float scale = rand_uniform(.8, 1.2);// .25 maybe is too small
 
 	float nw, nh;
 
@@ -670,7 +672,9 @@ cv::Mat data_augment(cv::Mat &src, std::vector<std::vector<float> > &rois,
 	rois = convert_box(boxes, num_boxes, result.w, result.h);
 	free(boxes);
 	free_image(orig);
-	return image2cvmat(result);
+	cv::Mat ret = image2cvmat(result);
+        free_image(result);
+        return ret;
 }
 void rotate180(box_label *label_in, box_label *label_out, int num_boxes)
 {

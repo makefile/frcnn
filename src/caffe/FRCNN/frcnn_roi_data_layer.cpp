@@ -191,6 +191,7 @@ unsigned int FrcnnRoiDataLayer<Dtype>::PrefetchRand() {
 
 template <typename Dtype>
 void FrcnnRoiDataLayer<Dtype>::CheckResetRois(vector<vector<float> > &rois, const string image_path, const float cols, const float rows, const float im_scale) {
+  CHECK_GT(rois.size(),0);//if there is no rois, will cause the following layer error
   for (int i = 0; i < rois.size(); i++) {
     bool ok = rois[i][DataPrepare::X1] > 0 && rois[i][DataPrepare::Y1] > 0 && 
         rois[i][DataPrepare::X2] < cols && rois[i][DataPrepare::Y2] < rows;
@@ -240,7 +241,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   CHECK(lines_id_ < lines_.size() && lines_id_ >= 0) << "select error line id : " << lines_id_;
   int index = lines_[lines_id_];
   bool do_mirror = mirror && PrefetchRand() % 2 && this->phase_ == TRAIN;
-  bool do_augment = PrefetchRand() % 2 && this->phase_ == TRAIN;
+  bool do_augment = FrcnnParam::data_jitter >= 0 && PrefetchRand() % 2 && this->phase_ == TRAIN;
   float max_short = scales[PrefetchRand() % scales.size()];
 
   read_time += timer.MicroSeconds();
@@ -270,28 +271,33 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   read_time += timer.MicroSeconds();
 
   timer.Start();
-  // Convert by : sub means and resize
-  // Image sub means
-  for (int r = 0; r < src.rows; r++) {
-    for (int c = 0; c < src.cols; c++) {
-      int offset = (r * src.cols + c) * 3;
-      reinterpret_cast<float *>(src.data)[offset + 0] -= this->mean_values_[0]; // B
-      reinterpret_cast<float *>(src.data)[offset + 1] -= this->mean_values_[1]; // G
-      reinterpret_cast<float *>(src.data)[offset + 2] -= this->mean_values_[2]; // R
-    }
-  }
   vector<vector<float> > rois = roi_database_[index];
+   std::cout << image_database_[index] << std::endl;    
   if (do_augment) {
     cv::Mat mat_aug = data_augment(src, rois, do_mirror, FrcnnParam::data_jitter, FrcnnParam::data_hue, FrcnnParam::data_saturation, FrcnnParam::data_exposure);
+    // remove predicted boxes with either height or width < threshold, same as proposal layer
+    vector<vector<float> > rois_aug;
+    for (int i = 0; i < rois.size(); i++) {
+        if ( (rois[i][DataPrepare::X2] - rois[i][DataPrepare::X1]) > FrcnnParam::rpn_min_size && (rois[i][DataPrepare::Y2] - rois[i][DataPrepare::Y1]) > FrcnnParam::rpn_min_size ) 
+            rois_aug.push_back(rois[i]);
+    }
+    //std::cout << "src: " << src.rows << ' ' << src.cols << ' ' << mat_aug.rows << ' ' << mat_aug.cols << std::endl;
     // doing jitter may exclude the rois, and Faster R-CNN cannot handle the 0-roi data currently
-    if (rois.size() > 0) {
+    if (rois_aug.size() > 0) {
+      for(int i=0;i<rois_aug.size();i++){
+          std::cout << rois_aug[i][0] << ' ' << rois_aug[i][1] << ' ' << rois_aug[i][2] << ' ' << rois_aug[i][3] << ' ' << rois_aug[i][4] << std::endl;
+      //    cvDrawDottedRect(mat_aug, cv::Point(rois[i][1], rois[i][2]), cv::Point(rois[i][3], rois[i][4]), cv::Scalar(0, 0, 200), 6, 1);
+      }
+      //std::string im_name = std::to_string(index) + ".jpg";
+      //cv::imwrite(im_name, mat_aug);
       src = mat_aug;
+    } else {
+      rois = roi_database_[index]; // recover the original rois
     }
   }
   //fyk: do haze free,NOTICE that data enhancement should only be done one, current prioty is haze-free > retinex > hist_equalize
   if (FrcnnParam::use_haze_free) {
-std::cout << "FrcnnParam::use_haze_free" << std::endl;
-	src = remove_haze(src);
+    src = remove_haze(src);
     src.convertTo(src, CV_32FC3);
   }else if (FrcnnParam::use_retinex) {
   	// NOT_IMPLEMENTED
@@ -313,6 +319,16 @@ std::cout << "FrcnnParam::use_haze_free" << std::endl;
     if(he_case > 0) src.convertTo(src, CV_32FC3);
   }
   //fyk end
+  // Convert by : sub means and resize
+  // Image sub means
+  for (int r = 0; r < src.rows; r++) {
+    for (int c = 0; c < src.cols; c++) {
+      int offset = (r * src.cols + c) * 3;
+      reinterpret_cast<float *>(src.data)[offset + 0] -= this->mean_values_[0]; // B
+      reinterpret_cast<float *>(src.data)[offset + 1] -= this->mean_values_[1]; // G
+      reinterpret_cast<float *>(src.data)[offset + 2] -= this->mean_values_[2]; // R
+    }
+  }
   float im_scale = Frcnn::get_scale_factor(src.cols, src.rows, max_short, max_long_);
   //fyk: check decimation or zoom,use different method
   if( im_scale < 1 )
@@ -333,11 +349,14 @@ std::cout << "FrcnnParam::use_haze_free" << std::endl;
     }
   }
 
+  // Check and Reset rois
+  CheckResetRois(rois, image_database_[index], cv_img.cols, cv_img.rows, im_scale);
+  
   // label format:
   // labels x1 y1 x2 y2
   // special for frcnn , this first channel is -1 , width , height ,
   // width_with_pad , height_with_pad
-  const int channels = roi_database_[index].size() + 1;
+  const int channels = rois.size() + 1;
   batch->label_.Reshape(channels, 5, 1, 1);
   Dtype *top_label = batch->label_.mutable_cpu_data();
 
@@ -347,15 +366,12 @@ std::cout << "FrcnnParam::use_haze_free" << std::endl;
   top_label[3] = 0;
   top_label[4] = 0;
 
-  // Check and Reset rois
-  CheckResetRois(rois, image_database_[index], cv_img.cols, cv_img.rows, im_scale);
-  
   // Flip
   //if (do_mirror) {
   //  FlipRois(rois, cv_img.cols);
   //}
 
-  CHECK_EQ(rois.size(), channels-1);
+  //CHECK_EQ(rois.size(), channels-1);
   for (int i = 1; i < channels; i++) {
     CHECK_EQ(rois[i-1].size(), DataPrepare::NUM);
     top_label[5 * i + 0] = rois[i-1][DataPrepare::X1] * im_scale; // x1

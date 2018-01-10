@@ -1,7 +1,8 @@
 **Special Feature for This Caffe Repository**
 
-- Clone from [D-X-Y/caffe-faster-rcnn](https://github.com/D-X-Y/caffe-faster-rcnn/tree/dev) `commit 8ba1d26`, will continuely updating.
+- clone of [D-X-Y/caffe-faster-rcnn](https://github.com/D-X-Y/caffe-faster-rcnn/tree/dev) `commit 8ba1d26`.
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
+- support SSD (not tested formally)
 - script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory
 - support snapshot after got -SIGTERM (kill command's default signal)
 - Faster rcnn joint train, test and evaluate
@@ -12,19 +13,27 @@
 - ROIAlign proposed in [Mask R-CNN](https://arxiv.org/abs/1703.06870)
 - FocalLoss in [Focal Loss for Dense Object Detection](https://arxiv.org/abs/1708.02002)
 - Swish Activation function in [Searching for Activation Functions](https://arxiv.org/abs/1710.05941)
-- eltwise layer using in-place sum to reduce memory, from [this PR](https://github.com/BVLC/caffe/pull/3708)
+- Eltwise layer using in-place sum to reduce memory, from [this PR](https://github.com/BVLC/caffe/pull/3708)
+- caffe layer module, layer definition and usage like `Python layer`,from caffe [PR#5294](https://github.com/BVLC/caffe/pull/5294)
 
 **Data Preprocess**
 
+data enhancement:
 - support Histogram equalization of color image
+- haze-free algorithm
+- Retinex (not yet)
+
+data augmentation:
 - random flip horizontal
+- random jitter
+- hue, saturation, exposure
+- rotate(multiple of 90 degree)
 
 **TODO list**
 
 - support batch image greater than 1
 - support Rotated R-CNN for rotated bounding box
 - OHEM
-- caffe layer module
 
 ## [Faster R-CNN](https://arxiv.org/abs/1506.01497)
 
