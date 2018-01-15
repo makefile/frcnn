@@ -84,10 +84,14 @@ int main(int argc, char** argv){
   std::ifstream infile(image_list.c_str());
   std::ofstream otfile(out_file.c_str());
   API::DataPrepare data_load;
+  //#include <boost/timer/timer.hpp>
+  //boost::timer::auto_cpu_timer t;//display time info in destructor
+  caffe::CPUTimer timer;
   int count = 0;
   while ( data_load.load_WithDiff(infile) ) {
     std::string image = data_load.GetImagePath("");
     cv::Mat cv_image = cv::imread(image_root+image);
+    timer.Start();
     //fyk : do equlize_hist,only for 3-channel
     int he_case = FrcnnParam::use_hist_equalize;
     switch(he_case){
@@ -98,10 +102,10 @@ int main(int argc, char** argv){
             cv_image = equalizeChannelHist(cv_image);
             break;
     }
-   //fyk end
 
     std::vector<caffe::Frcnn::BBox<float> > results;
     detector.predict(cv_image, results);
+    timer.Stop();
     otfile << "# " << data_load.GetImageIndex() << std::endl;
     otfile << image << std::endl;
     
@@ -133,7 +137,7 @@ int main(int argc, char** argv){
       otfile << results[obj].id << "  " << INT(results[obj][0]) << " " << INT(results[obj][1]) << " " << INT(results[obj][2]) << " " << INT(results[obj][3]) << "     " << FloatToString(results[obj].confidence) << std::endl;
     }
     LOG(INFO) << "Handle " << ++count << " th image : " << image << ", with image_thresh : " << image_thresh << ", " 
-        << ori_res_size << " -> " << results.size() << " boxes";
+        << ori_res_size << " -> " << results.size() << " boxes, detection use " << timer.MilliSeconds() << " ms";
   }
   infile.close();
   otfile.close();

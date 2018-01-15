@@ -111,8 +111,10 @@ __global__ void SelectBoxAftNMS(const int nthreads, const float *in_box, int *ke
 template <typename Dtype>
 void FrcnnProposalLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype> *> &bottom,
     const vector<Blob<Dtype> *> &top) {
-//  Forward_cpu(bottom, top);
-//  return ;
+ if(this->phase_ == TEST) {
+    Forward_cpu(bottom, top);
+    return ;
+ }else{
 #if 1
   DLOG(ERROR) << "========== enter proposal layer";
   const Dtype *bottom_rpn_score = bottom[0]->gpu_data();
@@ -260,6 +262,7 @@ void FrcnnProposalLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype> *> &bottom,
   if (bbox_score_!=NULL)  CUDA_CHECK(cudaFree(bbox_score_));
 
 #endif
+ }
 
 }
 

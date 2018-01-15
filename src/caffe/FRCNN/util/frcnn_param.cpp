@@ -81,6 +81,7 @@ float FrcnnParam::inf;
 int FrcnnParam::feat_stride;
 std::vector<float> FrcnnParam::anchors;
 float FrcnnParam::test_score_thresh;
+float FrcnnParam::test_rpn_score_thresh;//fyk speed up for NMS
 int FrcnnParam::n_classes;
 int FrcnnParam::iter_test;
 
@@ -160,6 +161,7 @@ void FrcnnParam::load_param(const std::string default_config_path) {
   FrcnnParam::feat_stride = extract_int("feat_stride", default_map);
   FrcnnParam::anchors = extract_vector("anchors", default_map);
   FrcnnParam::test_score_thresh = extract_float("test_score_thresh", default_map);
+  FrcnnParam::test_rpn_score_thresh = extract_float("test_rpn_score_thresh", default_map);
   FrcnnParam::n_classes = extract_int("n_classes", default_map);
   FrcnnParam::iter_test = extract_int("iter_test", default_map);
 }

@@ -281,6 +281,6 @@ if __name__ == '__main__':
 
     for cls in range(1,num_class,1): # Ingore __background__
         rec, prec, AP[cls] = cal_ap(all_boxes[cls], gts, cls)
-        print 'AP for {} = {}'.format(CLASSES[cls],AP[cls])
+        print 'AP for {} = {}'.format(CLASSES[cls],'%.4f'%AP[cls])
 
-    print 'mAP = {}'.format(np.mean(AP[1:]))
+    print 'mAP = {}'.format('%.4f'%np.mean(AP[1:]))

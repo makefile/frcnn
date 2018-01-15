@@ -96,6 +96,8 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
       for (int k = 0; k < config_n_anchors; k++) {
         Dtype score = bottom_rpn_score[config_n_anchors * height * width +
                                        k * height * width + j * width + i];
+        //fyk: ignore low confidence box to speed up NMS, k>0 just to ensure box num > 0
+        if (this->phase_ == TEST && score < FrcnnParam::test_rpn_score_thresh && k > 0) continue;
         //const int index = i * height * config_n_anchors + j * config_n_anchors + k;
 
         Point4f<Dtype> anchor(

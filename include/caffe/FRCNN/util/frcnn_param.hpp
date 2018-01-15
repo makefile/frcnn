@@ -97,6 +97,7 @@ public:
   static int feat_stride;
   static std::vector<float> anchors;
   static float test_score_thresh;
+  static float test_rpn_score_thresh;//fyk for speed up NMS
   static int n_classes;
   static int iter_test;
   // ========================================
