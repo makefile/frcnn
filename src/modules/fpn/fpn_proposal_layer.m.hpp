@@ -80,6 +80,7 @@ class FPNProposalLayer : public Layer<Dtype> {
   int *selected_flags_;
   int *gpu_keep_indices_;
 #endif
+  std::vector<int> _feat_strides;
 };
 
 }  // namespace frcnn

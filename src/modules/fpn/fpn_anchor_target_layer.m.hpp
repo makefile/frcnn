@@ -44,8 +44,8 @@ class FPNAnchorTargetLayer : public Layer<Dtype> {
 
   virtual inline const char* type() const { return "FPNAnchorTarget"; }
 
-  virtual inline int MinBottomBlobs() const { return 3; }
-  virtual inline int MaxBottomBlobs() const { return 3; }
+  virtual inline int MinBottomBlobs() const { return 7; }
+  virtual inline int MaxBottomBlobs() const { return 7; }
   virtual inline int MinTopBlobs() const { return 4; }
   virtual inline int MaxTopBlobs() const { return 4; }
 
@@ -61,6 +61,7 @@ class FPNAnchorTargetLayer : public Layer<Dtype> {
   vector<float> anchors_;
   int config_n_anchors_;
   int feat_stride_;
+  std::vector<int> _feat_strides;
   float border_;
 
   Point4f<Dtype> _sum;

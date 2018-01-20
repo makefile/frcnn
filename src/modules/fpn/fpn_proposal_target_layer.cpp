@@ -283,7 +283,8 @@ STUB_GPU(FPNProposalTargetLayer);
 #endif
 
 INSTANTIATE_CLASS(FPNProposalTargetLayer);
-REGISTER_LAYER_CLASS(FPNProposalTarget);
+//REGISTER_LAYER_CLASS(FPNProposalTarget);
+EXPORT_LAYER_MODULE_CLASS(FPNProposalTarget);
 
 } // namespace frcnn
 

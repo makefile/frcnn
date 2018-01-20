@@ -1,6 +1,8 @@
 PROJECT := caffe
 API := api
 YAML := yaml-cpp-0.5.3
+MODULE_LIBRARY_NAME := frcnn
+MODULE_SRC ?= src/modules
 
 CONFIG_FILE := Makefile.config
 # Explicitly check for the config file, otherwise make -k will proceed anyway.
@@ -48,7 +50,7 @@ COMMON_FLAGS += -DCAFFE_VERSION=$(DYNAMIC_VERSION_MAJOR).$(DYNAMIC_VERSION_MINOR
 # Get all source files
 ##############################
 # CXX_SRCS are the source files excluding the test ones.
-CXX_SRCS := $(shell find src/$(PROJECT) src/$(API) src/$(YAML) ! -name "test_*.cpp" -name "*.cpp")
+CXX_SRCS := $(shell find src/$(PROJECT) src/$(API) ! -name "test_*.cpp" -name "*.cpp")
 # CU_SRCS are the cuda source files
 CU_SRCS := $(shell find src/$(PROJECT) src/$(API) ! -name "test_*.cu" -name "*.cu")
 # TEST_SRCS are the test source files
@@ -367,15 +369,32 @@ ifeq ($(WITH_PYTHON_LAYER), 1)
 	LIBRARIES += $(PYTHON_LIBRARIES)
 endif
 
-# fyk add
+# fyk add WITH_MODULE_LAYER
+# compile yaml-cpp
+YAML_DYNLIB := $(LIB_BUILD_DIR)/lib$(YAML).so
+YAML_SRCS := $(shell find src/$(YAML) ! -name "test_*.cpp" -name "*.cpp")
+YAML_OBJS := $(addprefix $(BUILD_DIR)/, ${YAML_SRCS:.cpp=.o})
+# Suppress deprecated declarations of auto_ptr used in yaml-cpp .etc
+CXXFLAGS += -Wno-deprecated-declarations
 # Add options for layer modules
 LAYER_MODULE_PREFIX ?= "lib"
 COMMON_FLAGS += -DLAYER_MODULE_PREFIX="\"$(LAYER_MODULE_PREFIX)\""
 LAYER_MODULE_SUFFIX ?= ".so"
 COMMON_FLAGS += -DLAYER_MODULE_SUFFIX="\"$(LAYER_MODULE_SUFFIX)\""
-DEFAULT_LAYER_PATH ?= $(DISTRIBUTE_DIR)/lib/caffe/layers
+#DEFAULT_LAYER_PATH ?= $(DISTRIBUTE_DIR)/lib/caffe/layers
+#DEFAULT_LAYER_PATH ?= $(LIB_BUILD_DIR)/module_layers
+DEFAULT_LAYER_PATH ?= $(DISTRIBUTE_DIR)/modules
 COMMON_FLAGS += -DDEFAULT_LAYER_PATH="\"$(DEFAULT_LAYER_PATH)\""
-LIBRARIES += dl
+MODULE_DYNAMIC_NAME := $(DEFAULT_LAYER_PATH)/lib$(MODULE_LIBRARY_NAME).so
+#LIBRARIES += dl
+
+BIN_LDFLAGS += -L$(LIB_BUILD_DIR) -l$(YAML) 
+# -L$(DEFAULT_LAYER_PATH) -l$(MODULE_LIBRARY_NAME)
+MODULE_CXX_SRCS := $(shell find $(MODULE_SRC) ! -name "test_*.cpp" -name "*.cpp")
+MODULE_CU_SRCS := $(shell find $(MODULE_SRC) ! -name "test_*.cu" -name "*.cu")
+MODULE_CXX_OBJS := $(addprefix $(BUILD_DIR)/, ${MODULE_CXX_SRCS:.cpp=.o})
+MODULE_CU_OBJS := $(addprefix $(BUILD_DIR)/cuda/, ${MODULE_CU_SRCS:.cu=.o})
+MODULE_OBJS := $(MODULE_CXX_OBJS) $(MODULE_CU_OBJS)
 # fyk end
 
 # BLAS configuration (default = ATLAS)
@@ -582,16 +601,28 @@ $(BUILD_DIR)/.linked:
 $(ALL_BUILD_DIRS): | $(BUILD_DIR_LINK)
 	@ mkdir -p $@
 
+# fyk add
+$(DEFAULT_LAYER_PATH):
+	@ mkdir -p $(DEFAULT_LAYER_PATH)
+$(YAML_DYNLIB): $(YAML_OBJS)
+	@ echo LD -o $(YAML_DYNLIB)
+	$(Q)$(CXX) -shared -o $(YAML_DYNLIB) $(YAML_OBJS) $(LINKFLAGS)
+$(MODULE_DYNAMIC_NAME): $(MODULE_OBJS) | $(DEFAULT_LAYER_PATH)
+	@ echo LD -o $(MODULE_DYNAMIC_NAME)
+	$(Q)$(CXX) -shared -o $(MODULE_DYNAMIC_NAME) $(MODULE_OBJS) $(LINKFLAGS)
+allso: $(DYNAMIC_NAME) $(YAML_DYNLIB) $(MODULE_DYNAMIC_NAME)
+# fyk end
+
 $(DYNAMIC_NAME): $(OBJS) | $(LIB_BUILD_DIR)
 	@ echo LD -o $@
 	$(Q)$(CXX) -shared -o $@ $(OBJS) $(VERSIONFLAGS) $(LINKFLAGS) $(LDFLAGS)
 	@ cd $(BUILD_DIR)/lib; rm -f $(DYNAMIC_NAME_SHORT);   ln -s $(DYNAMIC_VERSIONED_NAME_SHORT) $(DYNAMIC_NAME_SHORT)
 
-$(STATIC_NAME): $(OBJS) | $(LIB_BUILD_DIR)
+$(STATIC_NAME): $(DYNAMIC_NAME) | $(LIB_BUILD_DIR)
 	@ echo AR -o $@
-	$(Q)ar rcs $@ $(OBJS)
+	$(Q)ar rcs $@ $(OBJS) # $(YAML_OBJS) $(MODULE_OBJS)
 
-$(BUILD_DIR)/%.o: %.cpp | $(ALL_BUILD_DIRS)
+$(BUILD_DIR)/%.o: %.cpp $(PROTO_GEN_HEADER) | $(ALL_BUILD_DIRS)
 	@ echo CXX $<
 	$(Q)$(CXX) $< $(CXXFLAGS) -c -o $@ 2> $@.$(WARNS_EXT) \
 		|| (cat $@.$(WARNS_EXT); exit 1)
@@ -635,14 +666,14 @@ $(TOOL_BUILD_DIR)/%: $(TOOL_BUILD_DIR)/%.bin | $(TOOL_BUILD_DIR)
 	@ $(RM) $@
 	@ ln -s $(notdir $<) $@
 
-$(TOOL_BINS): %.bin : %.o | $(DYNAMIC_NAME)
+$(TOOL_BINS): %.bin : %.o | $(DYNAMIC_NAME) $(MODULE_DYNAMIC_NAME)
 	@ echo CXX/LD -o $@
-	$(Q)$(CXX) $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) \
+	$(Q)$(CXX) $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) $(BIN_LDFLAGS) \
 		-Wl,-rpath,$(ORIGIN)/../lib
 
-$(EXAMPLE_BINS): %.bin : %.o | $(DYNAMIC_NAME)
+$(EXAMPLE_BINS): %.bin : %.o | $(DYNAMIC_NAME) $(MODULE_DYNAMIC_NAME)
 	@ echo CXX/LD -o $@
-	$(Q)$(CXX) $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) \
+	$(Q)$(CXX) $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) $(BIN_LDFLAGS) \
 		-Wl,-rpath,$(ORIGIN)/../../lib
 
 proto: $(PROTO_GEN_CC) $(PROTO_GEN_HEADER)

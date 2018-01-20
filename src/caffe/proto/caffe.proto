@@ -415,7 +415,7 @@ message LayerParameter {
   // fyk add for Swish activation function
   optional SwishParameter swish_param = 206;
   // fyk add for FPN
-  optional FPNAnchorTargetParameter anchor_param = 207;
+  //optional FPNAnchorTargetParameter anchor_param = 207;
   // fyk add for Caffe module layer, refer caffe pull/5294
   optional ModuleParameter module_param = 300;
   // for SSD rotated version: DRBox
@@ -1110,9 +1110,9 @@ message FocalLossParameter {
 message SwishParameter {
   optional float beta  = 1 [default = 1.0];//not implemented for now.
 }
-message FPNAnchorTargetParameter {
-  optional float feat_stride = 1;
-}
+//message FPNAnchorTargetParameter {
+//  optional float feat_stride = 1;
+//}
 // Xuanyi ..
 message VideoDataParameter{
   // Specify the data source.

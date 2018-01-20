@@ -5,7 +5,7 @@
 // Written by Ross Girshick
 // ------------------------------------------------------------------
 
-#include "fpn_anchor_target_layer.hpp"
+#include "fpn_anchor_target_layer.m.hpp"
 #include "caffe/FRCNN/util/frcnn_helper.hpp"
 #include "caffe/FRCNN/util/frcnn_utils.hpp"
 #include "caffe/FRCNN/util/frcnn_param.hpp"

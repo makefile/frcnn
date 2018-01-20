@@ -7,10 +7,11 @@
 
 // modify by github.com/makefile
 #include "fpn_utils.hpp"
-#include "fpn_proposal_layer.hpp"
+#include "fpn_proposal_layer.m.hpp"
 #include "caffe/FRCNN/util/frcnn_utils.hpp"
 #include "caffe/FRCNN/util/frcnn_helper.hpp"
 #include "caffe/FRCNN/util/frcnn_param.hpp"  
+#include "yaml-cpp/yaml.h"
 
 namespace caffe {
 
@@ -37,6 +38,11 @@ void FPNProposalLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bottom,
   CUDA_CHECK(cudaMalloc(&gpu_keep_indices_, sizeof(int) * rpn_post_nms_top_n));
 
 #endif
+  YAML::Node params = YAML::Load(this->layer_param_.module_param().param_str());
+  CHECK(params["feat_strides"]) << "not found as parameter.";
+  for (std::size_t i=0;i<params["feat_strides"].size();i++) {
+    _feat_strides.push_back(params["feat_strides"][i].as<int>());
+  }
   top[0]->Reshape(1, 5, 1, 1);
   /*
   if (top.size() > 1) {//fyk discard the score top
@@ -88,7 +94,7 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
 
  //can be specified in proto or config file
  //from C2 to C5 (C6 is not used in Fast R-CNN for that almost none of rois is large to be assigned to)
- const int _feat_strides[] = {4, 8, 16, 32, 64};//use it as base anchor size
+ //const int _feat_strides[] = {4, 8, 16, 32, 64};//use it as base anchor size
  //const int inverse_anchor_sizes = {32, 64, 128, 256, 512};//not used
  const int anchor_scales[] = {8, 8, 8, 8, 8};
  float arr[] = {0.5, 1, 2};
@@ -99,7 +105,7 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   std::vector<sort_pair> sort_vector;
 
  //for loop
- for(int fp_i = 0; fp_i<5; fp_i++) {
+ for(int fp_i = 0; fp_i<_feat_strides.size(); fp_i++) {
   int score_blob_ind = fp_i * 2;
   int bbox_blob_ind  = fp_i * 2 + 1;
   const Dtype *bottom_rpn_score = bottom[score_blob_ind]->cpu_data();  // rpn_cls_prob_reshape
@@ -127,9 +133,9 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
            // FrcnnParam::anchors[k * 4 + 2] + i * FrcnnParam::feat_stride,  // shift_x[i][j];
            // FrcnnParam::anchors[k * 4 + 3] + j * FrcnnParam::feat_stride); // shift_y[i][j];
            param_anchors[k][0] + j * _feat_strides[fp_i],
-	   param_anchors[k][1] + j * _feat_strides[fp_i],
-	   param_anchors[k][2] + j * _feat_strides[fp_i],
-	   param_anchors[k][3] + j * _feat_strides[fp_i]);
+           param_anchors[k][1] + j * _feat_strides[fp_i],
+           param_anchors[k][2] + j * _feat_strides[fp_i],
+           param_anchors[k][3] + j * _feat_strides[fp_i]);
 
         Point4f<Dtype> box_delta(
             bottom_rpn_bbox[(k * 4 + 0) * height * width + j * width + i],
@@ -224,7 +230,8 @@ STUB_GPU(FPNProposalLayer);
 #endif
 
 INSTANTIATE_CLASS(FPNProposalLayer);
-REGISTER_LAYER_CLASS(FPNProposal);
+//REGISTER_LAYER_CLASS(FPNProposal);
+EXPORT_LAYER_MODULE_CLASS(FPNProposal);
 
 } // namespace frcnn
 

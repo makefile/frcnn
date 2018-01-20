@@ -7,7 +7,7 @@
 #include <cub/cub.cuh>
 #include <iomanip>
 
-#include "fpn_proposal_layer.hpp"
+#include "fpn_proposal_layer.m.hpp"
 #include "caffe/FRCNN/util/frcnn_utils.hpp"
 #include "caffe/FRCNN/util/frcnn_helper.hpp"
 #include "caffe/FRCNN/util/frcnn_param.hpp"  
