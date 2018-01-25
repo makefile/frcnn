@@ -18,9 +18,11 @@ Point5f<Dtype> bbox_transform_inv(const Point5f<Dtype>& box, const Point5f<Dtype
   Dtype pred_w = exp(delta[2]) * src_w;
   Dtype pred_h = exp(delta[3]) * src_h;
   Dtype pred_a = delta[4] * M_PI_2 + src_a;//pi/2;
-  while(pred_a < - M_PI_2) pred_a += M_PI;
-  while(pred_a > M_PI_2) pred_a -= M_PI;
-  CHECK(pred_a > - M_PI_2 && pred_a <= M_PI_2) << pred_a;
+  //while(pred_a <= - M_PI_2) pred_a += M_PI;
+  //while(pred_a > M_PI_2) pred_a -= M_PI;
+  //CHECK(pred_a > - M_PI_2 && pred_a <= M_PI_2) << pred_a;
+  if(pred_a <= - M_PI_2) pred_a += M_PI;
+  if(pred_a > M_PI_2) pred_a -= M_PI;
 
   return Point5f<Dtype>(pred_ctr_x, pred_ctr_y,pred_w, pred_h, pred_a);
 }
@@ -70,18 +72,23 @@ Point5f<Dtype> bbox_transform(const Point5f<Dtype>& ex_roi, const Point5f<Dtype>
   Dtype gt_ctr_y = gt_roi[1];
   Dtype gt_theta = gt_roi[4];
   
-  //there the gt_theta & ex_theta should all in (-π/2,π/2]
-  while(ex_theta < - M_PI_2) ex_theta += M_PI;
-  while(ex_theta > M_PI_2) ex_theta -= M_PI;
-  CHECK(gt_theta > - M_PI_2 && gt_theta <= M_PI_2 && ex_theta > - M_PI_2 && ex_theta <= M_PI_2 ) << gt_theta << " " << ex_theta;
-  
+  //there the gt_theta & ex_theta should all in (-π/2,π/2], when learning is coveraged
+  //while(ex_theta <= - M_PI_2) ex_theta += M_PI;
+  //while(ex_theta > M_PI_2) ex_theta -= M_PI;
+
   Dtype ce = cos(ex_theta);
   Dtype se = sin(ex_theta);
   Dtype targets_dx = ( ce * (gt_ctr_x - ex_ctr_x) + se * (gt_ctr_y - ex_ctr_y) ) / ex_width;
   Dtype targets_dy = ( - se * (gt_ctr_x - ex_ctr_x) + ce * (gt_ctr_y - ex_ctr_y) ) / ex_height;
   Dtype targets_dw = log(gt_widths / ex_width);
   Dtype targets_dh = log(gt_heights / ex_height);
-  Dtype targets_da = (gt_theta - ex_theta) * M_2_PI;//2/pi ;
+  Dtype targets_da = gt_theta - ex_theta;
+  //while(targets_da < - M_PI) targets_da += M_PI;
+  //while(ex_theta > M_PI) targets_da -= M_PI;
+  if(gt_theta <= - M_PI_2 && ex_theta > M_PI_2) targets_da += M_PI;
+  if(gt_theta > M_PI_2 && ex_theta <= - M_PI_2) targets_da -= M_PI;
+  targets_da *= M_2_PI; // 2/pi 
+  //CHECK(gt_theta > - M_PI_2 && gt_theta <= M_PI_2 && ex_theta > - M_PI_2 && ex_theta <= M_PI_2 ) << gt_theta << " " << ex_theta;
   return Point5f<Dtype>(targets_dx, targets_dy, targets_dw, targets_dh, targets_da);
 }
 template Point5f<float> bbox_transform(const Point5f<float>& ex_roi, const Point5f<float>& gt_roi);
