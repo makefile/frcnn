@@ -62,6 +62,8 @@ class FPNAnchorTargetLayer : public Layer<Dtype> {
   int config_n_anchors_;
   int feat_stride_;
   std::vector<int> _feat_strides;
+  std::vector<int> anchor_scales;
+  std::vector<float> anchor_ratios;
   float border_;
 
   Point4f<Dtype> _sum;

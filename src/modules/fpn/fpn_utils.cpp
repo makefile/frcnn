@@ -12,26 +12,29 @@ using namespace caffe;
 using namespace caffe::Frcnn;
 // single scale version forked from generate_anchors.py
 //vector<int> generate_anchors(int base_size=16, vector<float> ratios={0.5, 1, 2}, int scale=8) {
-vector<vector<int> > generate_anchors(int base_size, vector<float> &ratios, int scale) {
-	vector<vector<int> > anchors (3, vector<int>(4,0));
+vector<vector<int> > generate_anchors(int base_size, const vector<float> &ratios, const vector<int> &scales) {
+	vector<vector<int> > anchors (scales.size() * ratios.size(), vector<int>(4,0));
 	int w = base_size;
 	int h = base_size;
 	float x_ctr = 0.5 * (w - 1);
 	float y_ctr = 0.5 * (h - 1);
-	w *= scale;
-	h *= scale;
-	int size = w * h;
-	for (int i=0;i<ratios.size();i++){
-		float r = ratios[i];
-		float size_ratio = size / r ;
-		w = (int)(sqrt(size_ratio));
-		h = (int)(w * r);
-		vector<int> &a = anchors[i];//make sure this is reference instead of copy
-		a[0] = x_ctr - 0.5 * (w - 1);
-		a[1] = y_ctr - 0.5 * (h - 1); 
-		a[2] = x_ctr + 0.5 * (w - 1); 
-		a[3] = y_ctr + 0.5 * (h - 1);
-	}
+	for (int j=0; j<scales.size(); j++) { 
+        const int scale = scales[j];
+        w *= scale;
+    	h *= scale;
+    	int size = w * h;
+    	for (int i=0;i<ratios.size();i++){
+    		float r = ratios[i];
+    		float size_ratio = size / r ;
+    		w = (int)(sqrt(size_ratio));
+    		h = (int)(w * r);
+    		vector<int> &a = anchors[j * ratios.size() + i];//make sure this is reference instead of copy
+    		a[0] = x_ctr - 0.5 * (w - 1);
+    		a[1] = y_ctr - 0.5 * (h - 1); 
+    		a[2] = x_ctr + 0.5 * (w - 1); 
+    		a[3] = y_ctr + 0.5 * (h - 1);
+    	}
+    }
 	return anchors;
 }
 

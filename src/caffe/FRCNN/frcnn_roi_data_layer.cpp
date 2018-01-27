@@ -272,7 +272,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
 
   timer.Start();
   vector<vector<float> > rois = roi_database_[index];
-   std::cout << image_database_[index] << std::endl;    
+  // std::cout << image_database_[index] << std::endl;    
   if (do_augment) {
     cv::Mat mat_aug = data_augment(src, rois, do_mirror, FrcnnParam::data_jitter, FrcnnParam::data_hue, FrcnnParam::data_saturation, FrcnnParam::data_exposure);
     // remove predicted boxes with either height or width < threshold, same as proposal layer
@@ -284,10 +284,10 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
     //std::cout << "src: " << src.rows << ' ' << src.cols << ' ' << mat_aug.rows << ' ' << mat_aug.cols << std::endl;
     // doing jitter may exclude the rois, and Faster R-CNN cannot handle the 0-roi data currently
     if (rois_aug.size() > 0) {
-      for(int i=0;i<rois_aug.size();i++){
-          std::cout << rois_aug[i][0] << ' ' << rois_aug[i][1] << ' ' << rois_aug[i][2] << ' ' << rois_aug[i][3] << ' ' << rois_aug[i][4] << std::endl;
+      //for(int i=0;i<rois_aug.size();i++){
+      //    std::cout << rois_aug[i][0] << ' ' << rois_aug[i][1] << ' ' << rois_aug[i][2] << ' ' << rois_aug[i][3] << ' ' << rois_aug[i][4] << std::endl;
       //    cvDrawDottedRect(mat_aug, cv::Point(rois[i][1], rois[i][2]), cv::Point(rois[i][3], rois[i][4]), cv::Scalar(0, 0, 200), 6, 1);
-      }
+      //}
       //std::string im_name = std::to_string(index) + ".jpg";
       //cv::imwrite(im_name, mat_aug);
       src = mat_aug;

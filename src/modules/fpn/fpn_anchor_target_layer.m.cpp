@@ -28,7 +28,6 @@ void FPNAnchorTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bottom
   config_n_anchors_ = FrcnnParam::anchors.size() / 4;
   feat_stride_ = FrcnnParam::feat_stride;
   */
-  config_n_anchors_ = 3;//only set one scale anchors in each pyramid feature
   //FPNAnchorTargetParameter anchor_param = this->layer_param_.anchor_param();
   //feat_stride_ = anchor_param.feat_stride();//Dtype
   YAML::Node params = YAML::Load(this->layer_param_.module_param().param_str());
@@ -50,6 +49,18 @@ void FPNAnchorTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bottom
       int area = height * width;
       feat_areas += area;
   }
+
+  //can be specified in proto or config file
+  //from C2 to C6
+  //const int _feat_strides[] = {4, 8, 16, 32, 64};//use it as base anchor size
+  //const int anchor_sizes = {32, 64, 128, 256, 512};//not used
+  const int scales[] = {8, 16};
+  const int n_scales = sizeof(scales) / sizeof(int);
+  this->anchor_scales = vector<int>(scales, scales + n_scales);
+  float arr[] = {0.5, 1, 2};
+  anchor_ratios = vector<float> (arr, arr+3);
+  config_n_anchors_ = 3 * n_scales;// anchors num of each pixel in each pyramid feature
+
   // labels
   //top[0]->Reshape(1, 1, config_n_anchors_ * height, width);
   top[0]->Reshape(1, 1, config_n_anchors_ * feat_areas, 1);
@@ -109,13 +120,6 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
     //DLOG(ERROR) << "============= " << i << "  : " << gt_boxes[i][0] << ", " << gt_boxes[i][1] << ", " << gt_boxes[i][2] << ", " << gt_boxes[i][3];
   }
 
- //can be specified in proto or config file
- //from C2 to C6
- //const int _feat_strides[] = {4, 8, 16, 32, 64};//use it as base anchor size
- //const int anchor_sizes = {32, 64, 128, 256, 512};//not used
- const int anchor_scales[] = {8, 8, 8, 8, 8};
- float arr[] = {0.5, 1, 2};
- vector<float> ratios (arr, arr+3);
  vector<int> inds_inside;
  vector<Point4f<Dtype> > anchors;
  int feat_areas = 0; // sum of feature map areas
@@ -141,10 +145,10 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
   // Generate anchors
   DLOG(ERROR) << "========== generate anchors";
   feat_stride_ = _feat_strides[fp_i];
-  int stride_idx = (int)(log2(feat_stride_) - 2);
-  CHECK(stride_idx >= 0 && stride_idx < 5) << "feat_stride param should in range [4,64]";
-  //set anchor size = 16 * feat_stride_ due to feat_stride in range (2,32) different from _feat_strides
-  vector<vector<int> > param_anchors = generate_anchors(_feat_strides[stride_idx], ratios, anchor_scales[stride_idx]); // min anchor_size=32
+  //int stride_idx = (int)(log2(feat_stride_) - 2);
+  //CHECK(stride_idx >= 0 && stride_idx < 5) << "feat_stride param should in range [4,64]";
+  //set anchor size = 8 * feat_stride_ due to feat_stride in range (4,32) different from _feat_strides
+  vector<vector<int> > param_anchors = generate_anchors(feat_stride_, anchor_ratios, anchor_scales); // min anchor_size=32
   
   Dtype bounds[4] = {-border_, -border_, im_width + border_, im_height + border_};
   const int height = bottom[fp_i]->height();
