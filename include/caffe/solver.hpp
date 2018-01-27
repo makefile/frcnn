@@ -8,6 +8,9 @@
 #include "caffe/solver_factory.hpp"
 #include "caffe/util/benchmark.hpp"
 
+// fyk add for logging
+#include "logger/vis_logger.hpp"
+
 namespace caffe {
 
 /**
@@ -128,6 +131,9 @@ class Solver {
   // Timing information, handy to tune e.g. nbr of GPUs
   Timer iteration_timer_;
   float iterations_last_;
+
+  // fyk add for logging
+  VisLogger logger;
 
   DISABLE_COPY_AND_ASSIGN(Solver);
 };

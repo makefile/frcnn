@@ -119,3 +119,15 @@ TEST_GPUID := 0
 
 # enable pretty build (comment to see full commands)
 Q ?= @
+
+# fyk for building in some machine
+USE_OPENMP := 0
+ifeq ($(USE_OPENMP), 1)
+    CXXFLAGS += -fopenmp
+    LDFLAGS += -lgomp
+endif
+
+# fyk for visualizing,you should compile use src/logger/Makefile first
+USE_VISUALDL := 0
+# the same version as VisualDL,since VisualDL link protobuf staticlly,in caffe no need to link again, or will cause runtime version conflict
+PROTOBUF_HEADER := /home/s04/fyk/protobuf-3.1.0/include

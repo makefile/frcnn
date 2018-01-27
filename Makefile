@@ -183,7 +183,8 @@ ifneq ($(CPU_ONLY), 1)
 	LIBRARIES := cudart cublas curand
 endif
 
-LIBRARIES += glog gflags protobuf boost_system boost_filesystem m hdf5_hl hdf5
+#LIBRARIES += glog gflags protobuf boost_system boost_filesystem m hdf5_hl hdf5
+LIBRARIES += glog gflags boost_system boost_filesystem m hdf5_hl hdf5
 
 # handle IO dependencies
 USE_LEVELDB ?= 1
@@ -369,14 +370,28 @@ ifeq ($(WITH_PYTHON_LAYER), 1)
 	LIBRARIES += $(PYTHON_LIBRARIES)
 endif
 
-# fyk add WITH_MODULE_LAYER
-# compile yaml-cpp
+# fyk add compile yaml-cpp
 YAML_DYNLIB := $(LIB_BUILD_DIR)/lib$(YAML).so
 YAML_SRCS := $(shell find src/$(YAML) ! -name "test_*.cpp" -name "*.cpp")
 YAML_OBJS := $(addprefix $(BUILD_DIR)/, ${YAML_SRCS:.cpp=.o})
 # Suppress deprecated declarations of auto_ptr used in yaml-cpp .etc
 CXXFLAGS += -Wno-deprecated-declarations
-# Add options for layer modules
+BIN_LDFLAGS += -Wl,-rpath,$(shell pwd)/$(LIB_BUILD_DIR) -L$(LIB_BUILD_DIR) -l$(YAML) 
+
+## Logger tools for visualizing
+ifeq ($(USE_VISUALDL), 1)
+    #COMMON_FLAGS += -DUSE_VISUALDL
+    # add search path of core.so and libvis_logger.so
+    LDFLAGS += -Wl,-rpath,$(shell pwd)/$(DISTRIBUTE_DIR)/lib -L$(DISTRIBUTE_DIR)/lib -lvis_logger -l:core.so
+    INCLUDE_AFTER := $(INCLUDE_DIRS)
+    INCLUDE_DIRS := $(PROTOBUF_HEADER) $(INCLUDE_AFTER)
+else
+    CXX_SRCS += $(shell find src/logger -name "*.cpp")
+    CXX_OBJS += $(addprefix $(BUILD_DIR)/, ${CXX_SRCS:.cpp=.o})
+    LIBRARIES += protobuf
+endif
+
+# Add options for layer modules WITH_MODULE_LAYER
 LAYER_MODULE_PREFIX ?= "lib"
 COMMON_FLAGS += -DLAYER_MODULE_PREFIX="\"$(LAYER_MODULE_PREFIX)\""
 LAYER_MODULE_SUFFIX ?= ".so"
@@ -387,9 +402,7 @@ DEFAULT_LAYER_PATH ?= $(DISTRIBUTE_DIR)/modules
 COMMON_FLAGS += -DDEFAULT_LAYER_PATH="\"$(DEFAULT_LAYER_PATH)\""
 MODULE_DYNAMIC_NAME := $(DEFAULT_LAYER_PATH)/lib$(MODULE_LIBRARY_NAME).so
 #LIBRARIES += dl
-
-BIN_LDFLAGS += -L$(LIB_BUILD_DIR) -l$(YAML) 
-# -L$(DEFAULT_LAYER_PATH) -l$(MODULE_LIBRARY_NAME)
+# BIN_LDFLAGS += -L$(DEFAULT_LAYER_PATH) -l$(MODULE_LIBRARY_NAME)
 MODULE_CXX_SRCS := $(shell find $(MODULE_SRC) ! -name "test_*.cpp" -name "*.cpp")
 MODULE_CU_SRCS := $(shell find $(MODULE_SRC) ! -name "test_*.cu" -name "*.cu")
 MODULE_CXX_OBJS := $(addprefix $(BUILD_DIR)/, ${MODULE_CXX_SRCS:.cpp=.o})
@@ -483,9 +496,9 @@ endif
 ##############################
 .PHONY: all lib test clean docs linecount lint lintclean tools examples $(DIST_ALIASES) \
 	py mat py$(PROJECT) mat$(PROJECT) proto runtest \
-	superclean supercleanlist supercleanfiles warn everything
+	superclean supercleanlist supercleanfiles warn everything allso
 
-all: lib tools examples
+all: allso lib tools examples
 
 lib: $(STATIC_NAME) $(DYNAMIC_NAME)
 
@@ -607,9 +620,9 @@ $(DEFAULT_LAYER_PATH):
 $(YAML_DYNLIB): $(YAML_OBJS)
 	@ echo LD -o $(YAML_DYNLIB)
 	$(Q)$(CXX) -shared -o $(YAML_DYNLIB) $(YAML_OBJS) $(LINKFLAGS)
-$(MODULE_DYNAMIC_NAME): $(MODULE_OBJS) | $(DEFAULT_LAYER_PATH)
+$(MODULE_DYNAMIC_NAME): $(MODULE_OBJS) | $(DEFAULT_LAYER_PATH) $(YAML_DYNLIB)
 	@ echo LD -o $(MODULE_DYNAMIC_NAME)
-	$(Q)$(CXX) -shared -o $(MODULE_DYNAMIC_NAME) $(MODULE_OBJS) $(LINKFLAGS)
+	$(Q)$(CXX) -shared -o $(MODULE_DYNAMIC_NAME) $(MODULE_OBJS) $(LINKFLAGS) $(BIN_LDFLAGS)
 allso: $(DYNAMIC_NAME) $(YAML_DYNLIB) $(MODULE_DYNAMIC_NAME)
 # fyk end
 
@@ -666,14 +679,14 @@ $(TOOL_BUILD_DIR)/%: $(TOOL_BUILD_DIR)/%.bin | $(TOOL_BUILD_DIR)
 	@ $(RM) $@
 	@ ln -s $(notdir $<) $@
 
-$(TOOL_BINS): %.bin : %.o | $(DYNAMIC_NAME) $(MODULE_DYNAMIC_NAME)
+$(TOOL_BINS): %.bin : %.o | $(DYNAMIC_NAME) $(MODULE_DYNAMIC_NAME) $(YAML_DYNLIB)
 	@ echo CXX/LD -o $@
-	$(Q)$(CXX) $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) $(BIN_LDFLAGS) \
+	$(Q)$(CXX) $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) \
 		-Wl,-rpath,$(ORIGIN)/../lib
 
 $(EXAMPLE_BINS): %.bin : %.o | $(DYNAMIC_NAME) $(MODULE_DYNAMIC_NAME)
 	@ echo CXX/LD -o $@
-	$(Q)$(CXX) $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) $(BIN_LDFLAGS) \
+	$(Q)$(CXX) $< -o $@ $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) \
 		-Wl,-rpath,$(ORIGIN)/../../lib
 
 proto: $(PROTO_GEN_CC) $(PROTO_GEN_HEADER)

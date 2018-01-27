@@ -5,6 +5,7 @@
 - support SSD (not tested formally)
 - script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory
 - support snapshot after got -SIGTERM (kill command's default signal)
+- logger tools by VisualDL which can visualize loss scalars and feature images .etc
 - Faster rcnn joint train, test and evaluate
 - Action recognition (Two Stream CNN)
 
@@ -15,6 +16,7 @@
 - Swish Activation function in [Searching for Activation Functions](https://arxiv.org/abs/1710.05941)
 - Eltwise layer using in-place sum to reduce memory, from [this PR](https://github.com/BVLC/caffe/pull/3708)
 - caffe layer module, layer definition and usage like `Python layer`,from caffe [PR#5294](https://github.com/BVLC/caffe/pull/5294)
+- CuDNNDeconv layer, Depth-wise Conv layer
 
 **Data Preprocess**
 
@@ -107,7 +109,7 @@ More details in the code:
 - git push -f origin dev
 
 ## QA
-- CUB not found, when compile for GPU version, `frcnn_proposal_layer.cu` requires a head file `<cub/cub.cuh>`. CUB is library contained in the official Cuda Toolkit, usually can be found in ` /usr/local/cuda/include/thrust/system/cuda/detail/`. You should add this path in your `Makefile.config` (try `locate ''cub.cuh''` to find cub on your system)
+- CUB not found, when compile for GPU version, `frcnn_proposal_layer.cu` requires a head file `<cub/cub.cuh>`. CUB is library contained in the official Cuda Toolkit, usually can be found in ` /usr/local/cuda/include/thrust/system/cuda/detail/`. You should add this path in your `Makefile.config` (try `locate cub.cuh` to find cub on your system)
 - When Get `error: RPC failed; result=22, HTTP code = 0`, use `git config http.postBuffer 524288000`, increases git buffer to 500mb
 
 ## Two-Stream Convolutional Networks for Action Recognition in Video
