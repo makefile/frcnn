@@ -9,6 +9,9 @@
 #include "caffe/util/io.hpp"
 #include "caffe/util/upgrade_proto.hpp"
 
+// fyk add for logging
+#include "logger/vis_logger.hpp"
+
 namespace caffe {
 
 template<typename Dtype>
@@ -226,7 +229,7 @@ void Solver<Dtype>::Step(int iters) {
           << " (" << per_s << " iter/s, " << lapse << "s/"
           << param_.display() << " iters), loss = " << smoothed_loss_ << "  " << text_time.str();
       // fyk add for logging of loss
-      logger.log_scalar("loss", iter_, loss);
+      log_scalar("loss", iter_, loss);
       // fyk end
       iteration_timer_.Start();
       iterations_last_ = iter_;

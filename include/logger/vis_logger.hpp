@@ -22,4 +22,9 @@ class VisLogger {
     void* get_scalar_by_name(const std::string scalar_name);
 };
 
+// C style, global VisLogger object
+extern "C" {
+    void log_scalar(const std::string scalar_name, int step, float value);
+}
+
 #endif // VIS_LOGGER_H_

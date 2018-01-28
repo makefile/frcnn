@@ -43,5 +43,15 @@ VisLogger::~VisLogger() {
     }
     delete (vs::LogWriter *)logger;
 }
+
+// C style, global VisLogger object
+extern "C" {
+    VisLogger vislogger;
+
+    void log_scalar(const std::string scalar_name, int step, float value) {
+        return vislogger.log_scalar(scalar_name, step, value);
+    }
+}
+
 #endif // USE_VISUALDL
 

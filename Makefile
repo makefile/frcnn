@@ -378,6 +378,19 @@ YAML_OBJS := $(addprefix $(BUILD_DIR)/, ${YAML_SRCS:.cpp=.o})
 CXXFLAGS += -Wno-deprecated-declarations
 BIN_LDFLAGS += -Wl,-rpath,$(shell pwd)/$(LIB_BUILD_DIR) -L$(LIB_BUILD_DIR) -l$(YAML) 
 
+## pybind interface
+# name of .so as well as python module name
+FRCNN_PYBIND := frcnn
+PY$(FRCNN_PYBIND)_SRC := python/frcnn/$(FRCNN_PYBIND).cpp
+# PY$(FRCNN_PYBIND)_HXX :=
+PY_FRCNN_LIB := $(DISTRIBUTE_DIR)/python/$(FRCNN_PYBIND).so
+PY_HXX_FLAGS = -I$(includedir)
+ifeq ($(USE_ANACONDA),1)
+       ANACONDA_PY_LDFLAGS := -Wl,-rpath,$(ANACONDA_HOME)/lib -L$(ANACONDA_HOME)/lib $(foreach library,$(PYTHON_LIBRARIES),-l$(library))
+else
+       ANACONDA_PY_LDFLAGS := $(foreach library,$(PYTHON_LIBRARIES),-l$(library))
+endif
+
 ## Logger tools for visualizing
 ifeq ($(USE_VISUALDL), 1)
     #COMMON_FLAGS += -DUSE_VISUALDL
@@ -496,7 +509,7 @@ endif
 ##############################
 .PHONY: all lib test clean docs linecount lint lintclean tools examples $(DIST_ALIASES) \
 	py mat py$(PROJECT) mat$(PROJECT) proto runtest \
-	superclean supercleanlist supercleanfiles warn everything allso
+	superclean supercleanlist supercleanfiles warn everything pyfrcnn allso
 
 all: allso lib tools examples
 
@@ -620,9 +633,20 @@ $(DEFAULT_LAYER_PATH):
 $(YAML_DYNLIB): $(YAML_OBJS)
 	@ echo LD -o $(YAML_DYNLIB)
 	$(Q)$(CXX) -shared -o $(YAML_DYNLIB) $(YAML_OBJS) $(LINKFLAGS)
+
+module: $(MODULE_DYNAMIC_NAME)
 $(MODULE_DYNAMIC_NAME): $(MODULE_OBJS) | $(DEFAULT_LAYER_PATH) $(YAML_DYNLIB)
 	@ echo LD -o $(MODULE_DYNAMIC_NAME)
 	$(Q)$(CXX) -shared -o $(MODULE_DYNAMIC_NAME) $(MODULE_OBJS) $(LINKFLAGS) $(BIN_LDFLAGS)
+
+pyfrcnn: $(PY_FRCNN_LIB)
+$(PY_FRCNN_LIB): $(PY$(FRCNN_PYBIND)_SRC) $(PY$(FRCNN_PYBIND)_HXX) | $(DYNAMIC_NAME)
+	@ echo CXX/LD -o $@ $<
+	@ mkdir -p $(DISTRIBUTE_DIR)/python
+	$(Q)$(CXX) -shared -o $@ $(PY$(FRCNN_PYBIND)_SRC) \
+            $(ANACONDA_PY_LDFLAGS) $(LINKFLAGS) $(PY_HXX_FLAGS) \
+            -Wl,-rpath,$(ORIGIN)/../../build/lib -L$(LIB_BUILD_DIR) -l$(LIBRARY_NAME)
+
 allso: $(DYNAMIC_NAME) $(YAML_DYNLIB) $(MODULE_DYNAMIC_NAME)
 # fyk end
 

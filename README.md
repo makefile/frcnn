@@ -1,6 +1,5 @@
 **Special Feature for This Caffe Repository**
 
-- clone of [D-X-Y/caffe-faster-rcnn](https://github.com/D-X-Y/caffe-faster-rcnn/tree/dev) `commit 8ba1d26`.
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
 - support SSD (not tested formally)
 - script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory
@@ -23,7 +22,6 @@
 data enhancement:
 - support Histogram equalization of color image
 - haze-free algorithm
-- Retinex (not yet)
 
 data augmentation:
 - random flip horizontal
@@ -33,18 +31,33 @@ data augmentation:
 
 **TODO list**
 
-- support batch image greater than 1
-- support Rotated R-CNN for rotated bounding box
-- OHEM
+- [] support batch image greater than 1
+- [] support Rotated R-CNN for rotated bounding box
+- [] OHEM
+- [] Retinex
 
-## [Faster R-CNN](https://arxiv.org/abs/1506.01497)
+## Installation
 
-### Disclaimer
-The official Faster R-CNN code (written in MATLAB) is [available](https://github.com/ShaoqingRen/faster_rcnn) here. If your goal is to reproduce the results in our NIPS 2015 paper, please use the [official](https://github.com/ShaoqingRen/faster_rcnn) code.
-
-This repository contains a C++ reimplementation of the Python code([py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn)). This C++ implementation is built on the offcial [caffe](https://github.com/BVLC/caffe), I will continue to update this code for improvement and up-to-date by offcial caffe.
+This repository uses C++11 features, so make sure to use compiler that is compatible of C++11.
+```shell
+cd $CAFFE_ROOT
+cp Makefile.config.example Makefile.config
+# modify the content in Makefile.config to adapt your system
+# if you like to use VisualDL to log losses, set USE_VISUALDL to 1,
+# and cd src/logger && make
+make -j
+make pyfrcnn # if you need use python to demo
+```
 
 All following steps, you should do these in the `$CAFFE_ROOT` path.
+
+## Faster R-CNN
+
+### Disclaimer
+The official [Faster R-CNN](https://arxiv.org/abs/1506.01497) code of NIPS 2015 paper (written in MATLAB) is [available](https://github.com/ShaoqingRen/faster_rcnn) here. It is worth noticing that:
+
+- This repository contains a C++ reimplementation of the Python code([py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn)), which is built on [caffe1](https://github.com/BVLC/caffe).
+- This repository used code from [caffe-faster-rcnn](https://github.com/D-X-Y/caffe-faster-rcnn/tree/dev) `commit 8ba1d26`.
 
 ### Demo
 Using `sh example/FRCNN/demo_frcnn.sh`, the will process five pictures in the `examples/FRCNN/images`, and put results into `examples/FRCNN/results`.
@@ -90,9 +103,13 @@ because the regression value is normalized during training and we should recover
 
 Shells and prototxts for different models are listed in the `examples/FRCNN` and `models/FRCNN`
 
-More details in the code:
-- `include/api/FRCNN` and `src/api/FRCNN` for demo and test api
-- `include/caffe/FRCNN` and `src/caffe/FRCNN` contains all codes related to Faster R-CNN
+More details about the code in include and src directory:
+- `api/FRCNN` for demo and test api
+- `caffe/FRCNN` contains codes related to Faster R-CNN
+- `logger` dir relates to logger tools
+- `modules` and `yaml-cpp` relate to Caffe module layers, which include FPN layers .etc
+- `python/frcnn` relates to pybind11 interface for demo
+- `caffe/ACTION_REC` Two-Stream Convolutional Networks for Action Recognition in Video
 
 ### Commands, Rebase From Caffe Master
 
@@ -112,9 +129,6 @@ More details in the code:
 - CUB not found, when compile for GPU version, `frcnn_proposal_layer.cu` requires a head file `<cub/cub.cuh>`. CUB is library contained in the official Cuda Toolkit, usually can be found in ` /usr/local/cuda/include/thrust/system/cuda/detail/`. You should add this path in your `Makefile.config` (try `locate cub.cuh` to find cub on your system)
 - When Get `error: RPC failed; result=22, HTTP code = 0`, use `git config http.postBuffer 524288000`, increases git buffer to 500mb
 
-## Two-Stream Convolutional Networks for Action Recognition in Video
-
-See codes `src/caffe/ACTION_REC` and `include/caffe/ACTION_REC`
 
 ## License and Citation
 

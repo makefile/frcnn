@@ -130,4 +130,9 @@ endif
 # fyk for visualizing,you should compile use src/logger/Makefile first
 USE_VISUALDL := 0
 # the same version as VisualDL,since VisualDL link protobuf staticlly,in caffe no need to link again, or will cause runtime version conflict
-PROTOBUF_HEADER := /home/s04/fyk/protobuf-3.1.0/include
+PROTOBUF_HEADER := /path/to/protobuf-3.1.0/include
+
+# when compile python interface for demo,by make pyfrcnn.
+# if use Anaconda, please set ANACONDA_HOME as well
+USE_ANACONDA := 0
+
