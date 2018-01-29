@@ -37,21 +37,23 @@ void* VisLogger::get_scalar_by_name(const std::string scalar_name) {
     return (void*)search->second;
 }
 
+#endif // USE_VISUALDL
+
 VisLogger::~VisLogger() {
+#ifdef USE_VISUALDL
     for (auto it=scalar_map.begin(); it!=scalar_map.end(); ++it) {
         delete (cp::Scalar<float> *)it->second;
     }
     delete (vs::LogWriter *)logger;
+#endif // USE_VISUALDL
 }
 
 // C style, global VisLogger object
-extern "C" {
+//extern "C" {
     VisLogger vislogger;
 
     void log_scalar(const std::string scalar_name, int step, float value) {
         return vislogger.log_scalar(scalar_name, step, value);
     }
-}
-
-#endif // USE_VISUALDL
+//}
 

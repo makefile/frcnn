@@ -39,6 +39,8 @@ public:
   static float data_hue;
   static float data_saturation;
   static float data_exposure;
+  // align image size to avoid Deconv upsampled size not equal to original due to odd number
+  static int im_size_align;
 
   // Train bounding-box regressors
   static bool bbox_reg;

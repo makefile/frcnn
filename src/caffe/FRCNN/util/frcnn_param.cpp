@@ -26,6 +26,8 @@ float FrcnnParam::data_saturation;
 float FrcnnParam::data_hue;
 float FrcnnParam::data_exposure;
 
+int FrcnnParam::im_size_align;
+
 // Train bounding-box regressors
 bool FrcnnParam::bbox_reg; // Unuse
 float FrcnnParam::bbox_thresh;
@@ -110,6 +112,8 @@ void FrcnnParam::load_param(const std::string default_config_path) {
   FrcnnParam::data_hue = extract_float("data_hue", default_map);
   FrcnnParam::data_saturation = extract_float("data_saturation", default_map);
   FrcnnParam::data_exposure = extract_float("data_exposure", default_map);
+
+  FrcnnParam::im_size_align = extract_int("im_size_align", default_map);
 
   FrcnnParam::bbox_reg =
       static_cast<bool>(extract_int("bbox_reg", default_map));

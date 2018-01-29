@@ -31,10 +31,10 @@ data augmentation:
 
 **TODO list**
 
-- [] support batch image greater than 1
-- [] support Rotated R-CNN for rotated bounding box
-- [] OHEM
-- [] Retinex
+- [ ] support batch image greater than 1
+- [ ] support Rotated R-CNN for rotated bounding box
+- [ ] OHEM
+- [ ] Retinex
 
 ## Installation
 

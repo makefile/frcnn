@@ -14,7 +14,7 @@
 class VisLogger {
   public:
     VisLogger(const std::string dir="./log", int sync_cycle=30, const std::string mode="train");
-    ~VisLogger();
+    virtual ~VisLogger();
     void log_scalar(const std::string scalar_name, int step, float value);
   private:
     void *logger;
@@ -22,9 +22,13 @@ class VisLogger {
     void* get_scalar_by_name(const std::string scalar_name);
 };
 
+#ifdef __cplusplus
 // C style, global VisLogger object
 extern "C" {
+#endif
     void log_scalar(const std::string scalar_name, int step, float value);
+#ifdef __cplusplus    
 }
+#endif
 
 #endif // VIS_LOGGER_H_

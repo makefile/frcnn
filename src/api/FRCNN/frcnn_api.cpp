@@ -119,8 +119,8 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
     vector<BBox<float> > bbox;
     for (int i = 0; i < box_num; i++) { 
       float score = cls_prob->cpu_data()[i * cls_num + cls];
-      // fyk: speed up, always include 0-th score to ensure at least 1 box is keeped
-      if (score < FrcnnParam::test_score_thresh && i > 0) continue;
+      // fyk: speed up
+      if (score < FrcnnParam::test_score_thresh) continue;
 
       Point4f<float> roi(rois->cpu_data()[(i * 5) + 1]/scale_factor,
                      rois->cpu_data()[(i * 5) + 2]/scale_factor,
@@ -144,6 +144,7 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
       // LOG(ERROR) << "roi: " << roi.to_string();
       bbox.push_back(BBox<float>(box, score, cls));
     }
+    if (0 == bbox.size()) continue;
     sort(bbox.begin(), bbox.end());
     vector<bool> select(box_num, true);
     // Apply NMS

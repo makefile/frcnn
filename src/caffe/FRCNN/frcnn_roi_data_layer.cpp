@@ -335,6 +335,19 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
     cv::resize(src, src, cv::Size(), im_scale, im_scale, cv::INTER_AREA );
   else
     cv::resize(src, src, cv::Size(), im_scale, im_scale);
+  if (FrcnnParam::im_size_align > 0) {
+    // pad to align im_size_align
+    int new_im_height = int(std::ceil(src.rows / float(FrcnnParam::im_size_align)) * FrcnnParam::im_size_align);
+    int new_im_width = int(std::ceil(src.cols / float(FrcnnParam::im_size_align)) * FrcnnParam::im_size_align);
+    cv::Mat padded_im = cv::Mat::zeros(cv::Size(new_im_width, new_im_height), CV_32FC3);
+    float *res_mat_data = (float *)src.data;
+    float *new_mat_data = (float *)padded_im.data;
+    for (int y = 0; y < src.rows; ++y)
+        for (int x = 0; x < src.cols; ++x)
+            for (int k = 0; k < 3; ++k)
+                new_mat_data[(y * new_im_width + x) * 3 + k] = res_mat_data[(y * src.cols + x) * 3 + k];
+    src = padded_im;
+  }
   // resize data
   batch->data_.Reshape(batch_size, 3, src.rows, src.cols);
   Dtype *top_data = batch->data_.mutable_cpu_data();

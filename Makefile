@@ -399,8 +399,8 @@ ifeq ($(USE_VISUALDL), 1)
     INCLUDE_AFTER := $(INCLUDE_DIRS)
     INCLUDE_DIRS := $(PROTOBUF_HEADER) $(INCLUDE_AFTER)
 else
-    CXX_SRCS += $(shell find src/logger -name "*.cpp")
-    CXX_OBJS += $(addprefix $(BUILD_DIR)/, ${CXX_SRCS:.cpp=.o})
+    LOGGER_CXX_SRCS := $(shell find src/logger -name "*.cpp")
+    OBJS += $(addprefix $(BUILD_DIR)/, ${LOGGER_CXX_SRCS:.cpp=.o})
     LIBRARIES += protobuf
 endif
 
