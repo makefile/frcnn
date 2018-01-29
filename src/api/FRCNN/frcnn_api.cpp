@@ -131,6 +131,8 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
     vector<RBBox<float> > bbox;
     for (int i = 0; i < box_num; i++) { 
       float score = cls_prob->cpu_data()[i * cls_num + cls];
+      // fyk: speed up
+      if (score < FrcnnParam::test_score_thresh) continue;
 
       Point5f<float> roi(rois->cpu_data()[(i * 6) + 1]/scale_factor,
                      rois->cpu_data()[(i * 6) + 2]/scale_factor,
@@ -161,12 +163,13 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
       // LOG(ERROR) << "roi: " << roi.to_string();
       bbox.push_back(RBBox<float>(box, score, cls));
     }
+    if (0 == bbox.size()) continue;
     sort(bbox.begin(), bbox.end());
     vector<bool> select(box_num, true);
     // Apply NMS
     for (int i = 0; i < box_num; i++)
       if (select[i]) {
-        if (bbox[i].confidence < FrcnnParam::test_score_thresh) break;
+        //if (bbox[i].confidence < FrcnnParam::test_score_thresh) break;
         for (int j = i + 1; j < box_num; j++) {
           if (select[j]) {
             if (skew_iou(bbox[i], bbox[j]) > FrcnnParam::test_nms) {

@@ -20,6 +20,11 @@ Dtype skew_iou(const Point5f<Dtype> &A, const Point5f<Dtype> &B) {
   if((fabs(A[0] - B[0]) < 1e-5) && (fabs(A[1] - B[1]) < 1e-5) && (fabs(A[2] - B[2]) < 1e-5) && (fabs(A[3] - B[3]) < 1e-5) && (fabs(A[4] - B[4]) < 1e-5)) {
       return 1.0;
   }
+  // cx,cy,w,h,theta(anti-clockwise,rad)
+  float region1[] = {(float)A[0],(float)A[1],(float)A[2],(float)A[3],(float)A[4]};
+  float region2[] = {(float)B[0],(float)B[1],(float)B[2],(float)B[3],(float)B[4]};
+  float result = rotateRectIoU(region1, region2);
+  /*The following code uses OpenCV3 rotatedRectangleIntersection, which is defined in OpenCV source code of modules/imgproc/src/intersection.cpp
   Dtype ax = A[0];
   Dtype ay = A[1];
   Dtype aw = A[2];
@@ -51,6 +56,7 @@ Dtype skew_iou(const Point5f<Dtype> &A, const Point5f<Dtype> &B) {
     //when rotatedRectangleIntersection get vertices greater than 8,it will throw error,since this error is not very little,so we just ignore it and return IOU of 0.
     LOG(ERROR) << e.what();
   }
+  */
   return result;
 }
 template float skew_iou(const Point5f<float> &A, const Point5f<float> &B);
@@ -190,8 +196,9 @@ Point4f<Dtype> rotate_outer_box_coordinates(const Point5f<Dtype> &rbox) {
 	Point4f<Dtype> rect(x1,y1,x2,y2);
 	return rect;
     */
+    // our angle(rad) is anti clock-wise
     float a_cos  =  cos(rbox[4]);
-    float a_sin  = -sin(rbox[4]);// anti clock-wise
+    float a_sin  =  sin(rbox[4]);
     float ctr_x = rbox[0];
     float ctr_y = rbox[1];
     float w = rbox[2];
@@ -211,14 +218,15 @@ Point4f<Dtype> rotate_outer_box_coordinates(const Point5f<Dtype> &rbox) {
     pts_y[2] = h / 2;
     pts_y[3] = - h / 2;
 
+    float min_x = INT_MAX, max_x = INT_MIN, min_y = INT_MAX, max_y = INT_MIN;
     for(int i = 0;i < 4;i++) {
         pts[2 * i] = a_cos * pts_x[i] - a_sin * pts_y[i] + ctr_x;
         pts[2 * i + 1] = a_sin * pts_x[i] + a_cos * pts_y[i] + ctr_y;
+        if (pts[2 * i] < min_x) min_x = pts[2 * i];
+        else if (pts[2 * i] > max_x) max_x = pts[2 * i];
+        if (pts[2 * i + 1] < min_y) min_y = pts[2 * i + 1];
+        else if (pts[2 * i + 1] > max_y) max_y = pts[2 * i + 1];
     }
-    Dtype min_x = std::min(pts[0],pts[4]);
-    Dtype max_x = std::max(pts[0],pts[4]);
-    Dtype min_y = std::min(pts[3],pts[7]);
-    Dtype max_y = std::max(pts[3],pts[7]);
     Point4f<Dtype> rect(min_x,min_y,max_x,max_y);
     //CHECK_LT(rect[0],rect[2]) << rect.to_string();
     //CHECK_LT(rect[1],rect[3]) << rect.to_string();

@@ -201,8 +201,9 @@ __device__ inline void convert_region(float * pts , float const * const region) 
 //  float h = region[2];
 //  float w = region[3];
   //fyk change the data order
+  // angle(rad) is postive in anti clock-wise
   float a_cos = cos(region[4]);
-  float a_sin = -sin(region[4]);
+  float a_sin = sin(region[4]);
   float w = region[2];
   float h = region[3];
 

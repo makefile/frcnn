@@ -8,5 +8,7 @@ void _overlaps(float* overlaps,const float* boxes,const float* query_boxes, int 
 template <typename Dtype>
 vector<vector<Dtype> > get_rbbox_ious_gpu(const vector<float> &boxes, const vector<float> &query_boxes, Dtype type, int device_id=0);
 
+// cpu IOU of two rbox: cx,cy,w,h,theta(anti-clockwise,rad)
+float rotateRectIoU(const float* region1, const float* region2);
 
 #endif

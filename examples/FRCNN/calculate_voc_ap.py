@@ -24,7 +24,8 @@ voc_classes = [
            'sheep', 'sofa', 'train', 'tvmonitor' ]
 NWPU_classes = ['plane','ship','storage','harbor','bridge']
 HRSC_classes = [ "1", "carrier", "war", "mer" ]
-CLASSES = ['__background__'] + HRSC_classes
+HRSC_1_classes = [ "1" ]
+CLASSES = ['__background__'] + HRSC_1_classes
 
 def parse_args():
     """
@@ -42,7 +43,7 @@ def parse_args():
                         default=0.1, type=float)
     parser.add_argument('--score_thresh', dest='score_thresh',
                         help='score thresh value',
-                        default=0.3, type=float)
+                        default=0.1, type=float)
     args = parser.parse_args()
 
     if args.gt_file is None or args.ans_file is None:
@@ -113,7 +114,7 @@ def prepare_data(args):
             for jj in range(ans_line.count('')):
                 ans_line.remove('')
             assert (len(ans_line) == 6), 'Ground Truth : label x1 y1 x2 y2 confidence, not {}'.format(gt_line)
-            #if float(ans_line[5]) < args.score_thresh: continue # fyk
+            if float(ans_line[5]) < args.score_thresh: continue # fyk
             res_current_box[index, :] = np.array([float(ans_line[0]), float(ans_line[1]), float(ans_line[2]),
                                                   float(ans_line[3]), float(ans_line[4]), float(ans_line[5])])
         results.append(res_current_box)
