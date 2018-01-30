@@ -64,7 +64,7 @@ template double skew_iou(const Point5f<double> &A, const Point5f<double> &B);
 #ifdef USE_GPU_NMS
 template <typename Dtype>
 vector<vector<Dtype> > skew_ious(const vector<Point5f<Dtype> > &A, const vector<Point5f<Dtype> > &B) {
-  if (A.size() < 5000) { // use CPU instead
+  if (A.size() < 100) { // use CPU instead
 	vector<vector<Dtype> >ious;
 	for (size_t i = 0; i < A.size(); i++) {
 		vector<Dtype> sub_ious;

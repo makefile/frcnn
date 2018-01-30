@@ -170,7 +170,7 @@ inline void convert_region(float * pts , float const * const region) {
 
   float angle_rad = region[4];// anti clock-wise
   float a_cos = cos(angle_rad);
-  float a_sin =  sin(angle_rad);
+  float a_sin = - sin(angle_rad);
   
   float ctr_x = region[0];
   float ctr_y = region[1];
