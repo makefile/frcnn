@@ -54,8 +54,8 @@ void Solver<Dtype>::Init(const SolverParameter& param) {
   }
   // Scaffolding code
   InitTrainNet();
+  InitTestNets();
   if (Caffe::root_solver()) {
-    InitTestNets();
     LOG(INFO) << "Solver scaffolding done.";
   }
   iter_ = 0;
@@ -105,7 +105,6 @@ void Solver<Dtype>::InitTrainNet() {
 
 template <typename Dtype>
 void Solver<Dtype>::InitTestNets() {
-  CHECK(Caffe::root_solver());
   const bool has_net_param = param_.has_net_param();
   const bool has_net_file = param_.has_net();
   const int num_generic_nets = has_net_param + has_net_file;
@@ -219,7 +218,7 @@ void Solver<Dtype>::Step(int iters) {
     if (display) {
       float lapse = iteration_timer_.Seconds();
       float per_s = (iter_ - iterations_last_) / (lapse ? lapse : 1);
-      float remaining_time = per_s / param_.display() * (param_.max_iter() - iter_);
+      float remaining_time = lapse / param_.display() * (param_.max_iter() - iter_);
       int remaining_hour = floor(remaining_time / 3600);
       int remaining_min = round(remaining_time / 60 - remaining_hour * 60);
       std::ostringstream text_time;
