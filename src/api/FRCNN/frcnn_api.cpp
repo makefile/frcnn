@@ -146,12 +146,12 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
     }
     if (0 == bbox.size()) continue;
     sort(bbox.begin(), bbox.end());
-    vector<bool> select(box_num, true);
+    vector<bool> select(bbox.size(), true);
     // Apply NMS
-    for (int i = 0; i < box_num; i++)
+    for (int i = 0; i < bbox.size(); i++)
       if (select[i]) {
         //if (bbox[i].confidence < FrcnnParam::test_score_thresh) break;
-        for (int j = i + 1; j < box_num; j++) {
+        for (int j = i + 1; j < bbox.size(); j++) {
           if (select[j]) {
             if (get_iou(bbox[i], bbox[j]) > FrcnnParam::test_nms) {
               select[j] = false;
