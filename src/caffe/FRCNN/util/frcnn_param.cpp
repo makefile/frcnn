@@ -17,7 +17,9 @@ float FrcnnParam::fg_thresh;
 float FrcnnParam::bg_thresh_hi;
 float FrcnnParam::bg_thresh_lo;
 bool FrcnnParam::use_flipped;
-int FrcnnParam::use_hist_equalize;//fyk
+//fyk add
+int FrcnnParam::use_hist_equalize;//equalize histogram
+int FrcnnParam::IMS_PER_BATCH;//image batch size in memory
 
 // Train bounding-box regressors
 bool FrcnnParam::bbox_reg; // Unuse
@@ -92,16 +94,12 @@ void FrcnnParam::load_param(const std::string default_config_path) {
   FrcnnParam::bg_thresh_lo = extract_float("bg_thresh_lo", default_map);
   FrcnnParam::use_flipped =
       static_cast<bool>(extract_int("use_flipped", default_map));
-  // fyk: data enhancement & augmentation
-  FrcnnParam::use_retinex =
-      static_cast<bool>(extract_int("use_retinex", default_map));
-  FrcnnParam::use_haze_free =
-      static_cast<bool>(extract_int("use_haze_free", default_map));
-  FrcnnParam::use_hist_equalize = extract_int("use_hist_equalize", default_map);
-  FrcnnParam::data_jitter = extract_float("data_jitter", default_map);
-  FrcnnParam::data_hue = extract_float("data_hue", default_map);
-  FrcnnParam::data_saturation = extract_float("data_saturation", default_map);
-  FrcnnParam::data_exposure = extract_float("data_exposure", default_map);
+  //fyk add
+  FrcnnParam::use_hist_equalize = 
+      extract_int("use_hist_equalize", default_map);
+  //fyk add truly batch_size
+  FrcnnParam::IMS_PER_BATCH =
+      extract_int("IMS_PER_BATCH", default_map);
 
   FrcnnParam::bbox_reg =
       static_cast<bool>(extract_int("bbox_reg", default_map));

@@ -1,3 +1,12 @@
+## Batch-faster-rcnn
+
+This is faster rcnn implementation supporting batch image end-to-end training.
+
+*under developing, accuracy not tested*
+
+TODO:
+- [ ] batch testing
+
 **Special Feature for This Caffe Repository**
 
 - Clone from [D-X-Y/caffe-faster-rcnn](https://github.com/D-X-Y/caffe-faster-rcnn/tree/dev) `commit 8ba1d26`, will continuely updating.

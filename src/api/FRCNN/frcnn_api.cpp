@@ -130,15 +130,10 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
                      bbox_pred->cpu_data()[(i * cls_num + cls) * 4 + 3]);
 
       Point4f<float> box = caffe::Frcnn::bbox_transform_inv(roi, delta);
-      //fyk clip predicted boxes to image
-      //box[0] = std::max(0.0f, box[0]);
-      //box[1] = std::max(0.0f, box[1]);
-      //box[2] = std::min(width-1.f, box[2]);
-      //box[3] = std::min(height-1.f, box[3]);
-      box[0] = std::max(0.0f, std::min(box[0], width - 1.f));
-      box[1] = std::max(0.0f, std::min(box[1], height - 1.f));
-      box[2] = std::max(0.0f, std::min(box[2], width - 1.f));
-      box[3] = std::max(0.0f, std::min(box[3], height - 1.f));
+      box[0] = std::max(0.0f, box[0]);
+      box[1] = std::max(0.0f, box[1]);
+      box[2] = std::min(width-1.f, box[2]);
+      box[3] = std::min(height-1.f, box[3]);
 
       // BBox tmp(box, score, cls);
       // LOG(ERROR) << "cls: " << tmp.id << " score: " << tmp.confidence;

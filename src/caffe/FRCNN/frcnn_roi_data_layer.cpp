@@ -21,9 +21,7 @@
 //
 //#endif
 //fyk
-#include "data_enhance/histgram/equalize_hist.hpp"
-#include "data_augment/data_utils.hpp"
-#include "data_enhance/haze_free/haze.h"
+#include "util/equalize_hist.hpp"
 
 #include "caffe/data_transformer.hpp"
 #include "caffe/internal_thread.hpp"
@@ -103,8 +101,7 @@ void FrcnnRoiDataLayer<Dtype>::DataLayerSetUp(
       }
       image_database_cache_.push_back(std::make_pair(image_path, datum));
     }
-    //vector<vector<float> > rois = data_load.GetRois( false );
-    vector<vector<float> > rois = data_load.GetRois( true );//include difficulty GT rois
+    vector<vector<float> > rois = data_load.GetRois( false );
     for (size_t i = 0; i < rois.size(); ++i) {
       int label = rois[i][DataPrepare::LABEL];
       label_hist.insert(std::make_pair(label, 0));
@@ -128,7 +125,9 @@ void FrcnnRoiDataLayer<Dtype>::DataLayerSetUp(
   vector<float> scales = FrcnnParam::scales;
   max_short_ = *max_element(scales.begin(), scales.end());
   max_long_ = FrcnnParam::max_size;
-  const int batch_size = 1;
+  //const int batch_size = 1;
+  // fyk modify for supporting batch > 1
+  const int batch_size = FrcnnParam::IMS_PER_BATCH;
 
   // data mean
   for (int i = 0; i < 3; i++) {
@@ -148,13 +147,14 @@ void FrcnnRoiDataLayer<Dtype>::DataLayerSetUp(
             << top[0]->channels() << "," << top[0]->height() << ","
             << top[0]->width();
 
-  // im_info: height width scale_factor
-  top[1]->Reshape(1, 3, 1, 1);
+  // im_info: height width scale_factor, fyk add 'box_num',and an additional padding not used for now.
+  // fyk modify for supporting batch > 1
+  top[1]->Reshape(batch_size, 5, 1, 1);
   // gt_boxes: label x1 y1 x2 y2
-  top[2]->Reshape(batch_size, 5, 1, 1);
-
+  top[2]->Reshape(batch_size, 5, 1, 1);//usally at least 1, at setup this reshape num is not used.
+LOG(INFO) << "prefetch_.size(): " << this->prefetch_.size();//will prefetch this number of batches in data thread.
   for (int i = 0; i < this->prefetch_.size(); ++i) {
-    this->prefetch_[i]->label_.Reshape(batch_size + 1, 5, 1, 1);
+    this->prefetch_[i]->label_.Reshape(batch_size, 5, 1, 1);//can be any number
   }
 
   LOG(INFO) << "Shuffling data";
@@ -168,8 +168,10 @@ void FrcnnRoiDataLayer<Dtype>::DataLayerSetUp(
 } 
 
 template <typename Dtype>
-void FrcnnRoiDataLayer<Dtype>::ShuffleImages() {
-  lines_id_++;
+void FrcnnRoiDataLayer<Dtype>::ShuffleImages() { //fyk: proceed the next batch
+  //lines_id_++;
+  // fyk modify for supporting batch > 1
+  lines_id_ += FrcnnParam::IMS_PER_BATCH;
   if (lines_id_ >= lines_.size()) {
     // We have reached the end. Restart from the first.
     DLOG(INFO) << "Restarting data prefetching from start.";
@@ -229,21 +231,29 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
 
   const vector<float> scales = FrcnnParam::scales;
   const bool mirror = FrcnnParam::use_flipped;
-  const int batch_size = 1;
+  //const int batch_size = 1;
+  // fyk modify for supporting batch > 1
+  const int batch_size = FrcnnParam::IMS_PER_BATCH;
+  bool do_mirror = mirror && PrefetchRand() % 2 && this->phase_ == TRAIN;
 
-  timer.Start();
+  //timer.Start();
   CHECK_EQ(roi_database_.size(), image_database_.size())
       << "image and roi size abnormal";
 
   // Select id for batch -> <0 if fliped
-  ShuffleImages();
+  ShuffleImages();//fyk: lines_id_ start from 0 + batchsize,the heading images is skiped in the first batch,but no need to worry about this
   CHECK(lines_id_ < lines_.size() && lines_id_ >= 0) << "select error line id : " << lines_id_;
-  int index = lines_[lines_id_];
-  bool do_mirror = mirror && PrefetchRand() % 2 && this->phase_ == TRAIN;
-  bool do_augment = do_mirror;
+  // fyk modify for supporting batch > 1,start batch loop
+ vector<cv::Mat> ims;
+ vector<float> im_scales;
+ int max_rows=0,max_cols=0;
+ for (int batch_i = 0; batch_i < batch_size; batch_i++) {
+  int b_lines_id = lines_id_ + batch_i;
+  if(b_lines_id >= lines_.size()) b_lines_id %= lines_.size();//we can also break here
+  int index = lines_[b_lines_id];
   float max_short = scales[PrefetchRand() % scales.size()];
 
-  read_time += timer.MicroSeconds();
+  //read_time += timer.MicroSeconds();
 
   // Prepare Image and labels;
   timer.Start();
@@ -258,6 +268,19 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
       return;
     }
   }
+  //fyk : do equlize_hist,only for 3-channel
+  int he_case = FrcnnParam::use_hist_equalize;
+  switch(he_case) {
+  case 1:
+        cv_img = equalizeIntensityHist(cv_img);
+        break;
+  case 2:
+        cv_img = equalizeChannelHist(cv_img);
+        break;
+  default:
+        break;
+  }
+  //fyk end
   cv::Mat src;
   cv_img.convertTo(src, CV_32FC3);
   if (do_mirror) {
@@ -279,96 +302,121 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
       reinterpret_cast<float *>(src.data)[offset + 2] -= this->mean_values_[2]; // R
     }
   }
-  vector<vector<float> > rois = roi_database_[index];
-  if (do_augment) {
-    src = data_augment(src, rois, 0, FrcnnParam::data_jitter, FrcnnParam::data_hue, FrcnnParam::data_saturation, FrcnnParam::data_exposure);
-  }
-  //fyk: do haze free,NOTICE that data enhancement should only be done one, current prioty is haze-free > retinex > hist_equalize
-  if (FrcnnParam::use_haze_free) {
-	src = remove_haze(src);
-  }else if (FrcnnParam::use_retinex) {
-  	// NOT_IMPLEMENTED
-  }else{
-  //fyk : do equlize_hist,only for 3-channel
-  int he_case = FrcnnParam::use_hist_equalize;
-  switch(he_case) {
-  case 1:
-        src = equalizeIntensityHist(src);
-        break;
-  case 2:
-        src = equalizeChannelHist(src);
-        break;
-  default:
-        break;
-  }
-  }
-  //fyk end
   float im_scale = Frcnn::get_scale_factor(src.cols, src.rows, max_short, max_long_);
   //fyk: check decimation or zoom,use different method
-  if( src.rows > im_scale || src.cols > im_scale )
+  //fyk: note that im_scale is a scale factor,and cv::Size()=0,so cv::resize will keep the original aspect ratio
+  if (im_scale < 1)
   	cv::resize(src, src, cv::Size(), im_scale, im_scale, cv::INTER_AREA );
   else //fyk end
   cv::resize(src, src, cv::Size(), im_scale, im_scale);
+  // same as py-faster-rcnn im_list_to_blob
+  ims.push_back(src.clone());
+  im_scales.push_back(im_scale);
+  max_rows = max_rows > src.rows? max_rows : src.rows;
+  max_cols = max_cols > src.cols? max_cols : src.cols;
+ }//end loop for batch 
   // resize data
-  batch->data_.Reshape(batch_size, 3, src.rows, src.cols);
+  //batch->data_.Reshape(batch_size, 3, src.rows, src.cols);
+  batch->data_.Reshape(batch_size, 3, max_rows, max_cols);//include padding
   Dtype *top_data = batch->data_.mutable_cpu_data();
-
+  caffe_set(batch->data_.count(), Dtype(0), top_data);//init padding to 0
+ for (int batch_i = 0; batch_i < batch_size; batch_i++) {
+  int img_offset = batch_i * 3 * max_rows * max_cols;
+  cv::Mat src = ims[batch_i];
   for (int r = 0; r < src.rows; r++) {
     for (int c = 0; c < src.cols; c++) {
-      int cv_offset = (r * src.cols + c) * 3;
-      int blob_shift = r * src.cols + c;
-      top_data[0 * src.rows * src.cols + blob_shift] = reinterpret_cast<float *>(src.data)[cv_offset + 0];
-      top_data[1 * src.rows * src.cols + blob_shift] = reinterpret_cast<float *>(src.data)[cv_offset + 1];
-      top_data[2 * src.rows * src.cols + blob_shift] = reinterpret_cast<float *>(src.data)[cv_offset + 2];
+      int cv_offset = (r * src.cols + c) * 3;//src img data idx
+      int blob_shift = r * max_cols + c;
+      //fyk change from src.* to max_* for adding padding
+      top_data[img_offset + 0 * max_rows * max_cols + blob_shift] = reinterpret_cast<float *>(src.data)[cv_offset + 0];
+      top_data[img_offset + 1 * max_rows * max_cols + blob_shift] = reinterpret_cast<float *>(src.data)[cv_offset + 1];
+      top_data[img_offset + 2 * max_rows * max_cols + blob_shift] = reinterpret_cast<float *>(src.data)[cv_offset + 2];
     }
   }
+ }//end loop for batch
 
-  // label format:
-  // labels x1 y1 x2 y2
-  // special for frcnn , this first channel is -1 , width , height ,
-  // width_with_pad , height_with_pad
-  const int channels = roi_database_[index].size() + 1;
+//  top_label[0] = src.rows; // height
+//  top_label[1] = src.cols; // width
+//  top_label[2] = im_scale; // im_scale: used to filter min size
+//  top_label[3] = 0;
+//  top_label[4] = 0;
+
+  // fyk modify for supporting batch > 1
+  vector<vector<float> > rois;
+  vector<float> ims_info;
+  vector<int> im_inds;
+  int channels = 0;
+  for (int i = 0; i < batch_size; i++) {
+    cv::Mat scaled_img = ims[i];
+    int index = lines_[lines_id_ + i];
+    vector<vector<float> > _rois = roi_database_[index];
+    // Flip
+    if (do_mirror) {
+        //FlipRois(rois, cv_img.cols);
+        FlipRois(_rois, scaled_img.cols);
+    }
+    // Check and Reset rois
+    CheckResetRois(_rois, image_database_[index], scaled_img.cols, scaled_img.rows, im_scales[i]);
+    const int roi_num = roi_database_[index].size() ;//rois number of index-th image
+    LOG(INFO) << i << " th image has GT num: " << roi_num;
+    // notice that we save the original im_info instead of image info after padding, since we only need the info to guarantee the box inside image border in anchor target layer and proposal layer,.etc and the im_scale only be used in removing small boxes, it doesn't matter too much.
+    //static const float arr[] = {(float)scaled_img.rows,(float)scaled_img.cols,(float)im_scales[i],(float)roi_num,(float)0};// size=5 for alignment. add padding
+    // BUG fix! DO NOT USE STATIC VALUE, for it only initialize only once
+    const float arr[] = {(float)scaled_img.rows,(float)scaled_img.cols,(float)im_scales[i],(float)roi_num,(float)0};// size=5 for alignment. add padding
+    vector<float> image_label (arr, arr + sizeof(arr) / sizeof(arr[0]) );//Conventional STL,can also use vector = {} in C++11
+    channels += roi_num + 1;//rois number of index-th image plus 1 for im_info;
+    // append
+    rois.insert(rois.end(), _rois.begin(), _rois.end());
+    ims_info.insert(ims_info.end(), image_label.begin(), image_label.end());
+    vector<int> im_ind_ (roi_num, i); 
+    im_inds.insert(im_inds.end(), im_ind_.begin(), im_ind_.end());
+  }
+  // fyk modify for supporting batch > 1
   batch->label_.Reshape(channels, 5, 1, 1);
+LOG(INFO) << "batch->label_.shape_string : " << batch->label_.shape_string();
   Dtype *top_label = batch->label_.mutable_cpu_data();
-
-  top_label[0] = src.rows; // height
-  top_label[1] = src.cols; // width
-  top_label[2] = im_scale; // im_scale: used to filter min size
-  top_label[3] = 0;
-  top_label[4] = 0;
-
-  // Check and Reset rois
-  CheckResetRois(rois, image_database_[index], cv_img.cols, cv_img.rows, im_scale);
-  
-  // Flip
-  if (do_mirror) {
-    FlipRois(rois, cv_img.cols);
+  //CHECK_EQ(rois.size(), channels-batch_size);
+  // fyk save im_info,will push to top blob at forward()
+  for (int i = 0; i < batch_size; i++) {
+    top_label[5 * i + 0] = ims_info[5 * i + 0];
+    top_label[5 * i + 1] = ims_info[5 * i + 1];
+    top_label[5 * i + 2] = ims_info[5 * i + 2];
+    top_label[5 * i + 3] = ims_info[5 * i + 3];
+    top_label[5 * i + 4] = ims_info[5 * i + 4];
   }
 
-  CHECK_EQ(rois.size(), channels-1);
-  for (int i = 1; i < channels; i++) {
-    CHECK_EQ(rois[i-1].size(), DataPrepare::NUM);
-    top_label[5 * i + 0] = rois[i-1][DataPrepare::X1] * im_scale; // x1
-    top_label[5 * i + 1] = rois[i-1][DataPrepare::Y1] * im_scale; // y1
-    top_label[5 * i + 2] = rois[i-1][DataPrepare::X2] * im_scale; // x2
-    top_label[5 * i + 3] = rois[i-1][DataPrepare::Y2] * im_scale; // y2
-    top_label[5 * i + 4] = rois[i-1][DataPrepare::LABEL];         // label
+  for (int i = batch_size; i < channels; i++) {
+    CHECK_EQ(rois[i-batch_size].size(), DataPrepare::NUM);
+    //since i have scaled the rois,there is no need to scale.
+    top_label[5 * i + 0] = rois[i-batch_size][DataPrepare::X1] * im_scales[i-batch_size]; // x1
+    top_label[5 * i + 1] = rois[i-batch_size][DataPrepare::Y1] * im_scales[i-batch_size]; // y1
+    top_label[5 * i + 2] = rois[i-batch_size][DataPrepare::X2] * im_scales[i-batch_size]; // x2
+    top_label[5 * i + 3] = rois[i-batch_size][DataPrepare::Y2] * im_scales[i-batch_size]; // y2
+    top_label[5 * i + 4] = rois[i-batch_size][DataPrepare::LABEL];         // label
+    CHECK_LT(top_label[5 * i + 4], FrcnnParam::n_classes);//fyk
+    //fyk
+    int h = ims[im_inds[i - batch_size]].rows;
+    int w = ims[im_inds[i - batch_size]].cols;
 
-    if (top_label[5 * i + 3] >= top_label[0]) {
-      DLOG(INFO) << mirror << " row : " << src.rows << ",  col : " << src.cols << ", im_scale : " << im_scale << " | " << rois[i-1][DataPrepare::Y2] << " , " << top_label[5 * i + 3];
-      top_label[5 * i + 3] = top_label[0] - 1;
+    if (top_label[5 * i + 3] >= h) {
+      //DLOG(INFO) << mirror << " row : " << src.rows << ",  col : " << src.cols << ", im_scale : " << im_scale << " | " << rois[i-batch_size][DataPrepare::Y2] << " , " << top_label[5 * i + 3];
+	  DLOG(INFO) << mirror << rois[i-batch_size][DataPrepare::Y2] << " , " << top_label[5 * i + 3];
+	  top_label[5 * i + 3] = h - 1;
     }
-    if (top_label[5 * i + 2] >= top_label[1]) {
-      DLOG(INFO) << mirror << " row : " << src.rows << ",  col : " << src.cols << ", im_scale : " << im_scale << " | " << rois[i-1][DataPrepare::X2] << " , " << top_label[5 * i + 2];
-      top_label[5 * i + 2] = top_label[1] - 1;
+    if (top_label[5 * i + 2] >= w) {
+      //DLOG(INFO) << mirror << " row : " << src.rows << ",  col : " << src.cols << ", im_scale : " << im_scale << " | " << rois[i-batch_size][DataPrepare::X2] << " , " << top_label[5 * i + 2];
+	  DLOG(INFO) << mirror << rois[i-batch_size][DataPrepare::X2] << " , " << top_label[5 * i + 2];
+      top_label[5 * i + 2] = w - 1;
     }
     if (top_label[5 * i + 0] < 0) {
       top_label[5 * i + 0] = 0;
-      DLOG(INFO) << mirror << " row : " << src.rows << ",  col : " << src.cols << ", im_scale : " << im_scale << " | " << rois[i-1][DataPrepare::X2] << " , " << top_label[5 * i + 2];
+      //DLOG(INFO) << mirror << " row : " << src.rows << ",  col : " << src.cols << ", im_scale : " << im_scale << " | " << rois[i-batch_size][DataPrepare::X2] << " , " << top_label[5 * i + 2];
+	  DLOG(INFO) << mirror << rois[i-batch_size][DataPrepare::X2] << " , " << top_label[5 * i + 2];
     }
     if (top_label[5 * i + 1] < 0) {
       top_label[5 * i + 1] = 0;
-      DLOG(INFO) << mirror << " row : " << src.rows << ",  col : " << src.cols << ", im_scale : " << im_scale << " | " << rois[i-1][DataPrepare::Y2] << " , " << top_label[5 * i + 3];
+      //DLOG(INFO) << mirror << " row : " << src.rows << ",  col : " << src.cols << ", im_scale : " << im_scale << " | " << rois[i-batch_size][DataPrepare::Y2] << " , " << top_label[5 * i + 3];
+	  DLOG(INFO) << mirror << rois[i-batch_size][DataPrepare::Y2] << " , " << top_label[5 * i + 3];
     }
   }
 
@@ -384,16 +432,20 @@ template <typename Dtype>
 void FrcnnRoiDataLayer<Dtype>::Forward_cpu(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
   Batch<Dtype>* batch = this->prefetch_full_.pop("Data layer prefetch queue empty");
+  DLOG(INFO) << "====================data layer batch:" << batch->data_.num();//fyk
   // Reshape to loaded data.
   top[0]->ReshapeLike(batch->data_);
   // Copy the data
   caffe_copy(batch->data_.count(), batch->data_.cpu_data(), top[0]->mutable_cpu_data());
   if (this->output_labels_) {
-    caffe_copy(3, batch->label_.cpu_data(), top[1]->mutable_cpu_data());
+    //caffe_copy(3, batch->label_.cpu_data(), top[1]->mutable_cpu_data());
+    // fyk modify for supporting batch > 1
+    const int batch_size = FrcnnParam::IMS_PER_BATCH;
+    caffe_copy(batch_size * 5, batch->label_.cpu_data(), top[1]->mutable_cpu_data());
     // Reshape to loaded labels.
-    top[2]->Reshape(batch->label_.num()-1, batch->label_.channels(), batch->label_.height(), batch->label_.width());
+    top[2]->Reshape(batch->label_.num()-batch_size, batch->label_.channels(), batch->label_.height(), batch->label_.width());
     // Copy the labels.
-    caffe_copy(batch->label_.count() - 5, batch->label_.cpu_data() + 5, top[2]->mutable_cpu_data());
+    caffe_copy(batch->label_.count() - batch_size * 5, batch->label_.cpu_data() + batch_size * 5, top[2]->mutable_cpu_data());
   }
   this->prefetch_free_.push(batch);
 }

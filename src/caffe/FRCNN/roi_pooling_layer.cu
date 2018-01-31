@@ -83,9 +83,6 @@ void ROIPoolingLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   int count = top[0]->count();
   // NOLINT_NEXT_LINE(whitespace/operators)
   ROIPoolForward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
-  //set min(threads) = 1 for avoiding cudaCheckError if count=0
-  //LOG(INFO) << "count " << count << " CAFFE_GET_BLOCKS(count) " << CAFFE_GET_BLOCKS(count);
-  //ROIPoolForward<Dtype><<<std::max(1, CAFFE_GET_BLOCKS(count)), CAFFE_CUDA_NUM_THREADS>>>(
       count, bottom_data, spatial_scale_, channels_, height_, width_,
       pooled_height_, pooled_width_, bottom_rois, top_data, argmax_data);
   CUDA_POST_KERNEL_CHECK;
@@ -178,8 +175,6 @@ void ROIPoolingLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
   const int* argmax_data = max_idx_.gpu_data();
   // NOLINT_NEXT_LINE(whitespace/operators)
   ROIPoolBackward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
-  //set min(threads) = 1 for avoiding cudaCheckError if count=0
-  //ROIPoolBackward<Dtype><<<std::max(1, CAFFE_GET_BLOCKS(count)), CAFFE_CUDA_NUM_THREADS>>>(
       count, top_diff, argmax_data, top[0]->num(), spatial_scale_, channels_,
       height_, width_, pooled_height_, pooled_width_, bottom_diff, bottom_rois);
   CUDA_POST_KERNEL_CHECK;

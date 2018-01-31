@@ -9,9 +9,6 @@
 #include "caffe/FRCNN/util/frcnn_utils.hpp"
 #include "caffe/FRCNN/util/frcnn_helper.hpp"
 #include "caffe/FRCNN/util/frcnn_param.hpp"  
-#include "caffe/FRCNN/util/frcnn_gpu_nms.hpp"
-
-#define USE_GPU_NMS //fyk: accelerate
 
 namespace caffe {
 
@@ -38,9 +35,11 @@ void FrcnnProposalLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bottom,
   CUDA_CHECK(cudaMalloc(&gpu_keep_indices_, sizeof(int) * rpn_post_nms_top_n));
 
 #endif
-  top[0]->Reshape(1, 5, 1, 1);
+  // fyk modify for supporting batch > 1
+  const int batch_size = FrcnnParam::IMS_PER_BATCH;
+  top[0]->Reshape(batch_size, 5, 1, 1);
   if (top.size() > 1) {
-    top[1]->Reshape(1, 1, 1, 1);
+    top[1]->Reshape(batch_size, 1, 1, 1);
   }
 }
 
@@ -50,17 +49,17 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   DLOG(ERROR) << "========== enter proposal layer";
   const Dtype *bottom_rpn_score = bottom[0]->cpu_data();  // rpn_cls_prob_reshape
   const Dtype *bottom_rpn_bbox = bottom[1]->cpu_data();   // rpn_bbox_pred
-  const Dtype *bottom_im_info = bottom[2]->cpu_data();    // im_info
+  //const Dtype *bottom_im_info = bottom[2]->cpu_data();    // im_info
 
   const int num = bottom[1]->num();
   const int channes = bottom[1]->channels();
   const int height = bottom[1]->height();
   const int width = bottom[1]->width();
-  CHECK(num == 1) << "only single item batches are supported";
+  // fyk modify for supporting batch > 1,comment check
+  //CHECK(num == 1) << "only single item batches are supported";
   CHECK(channes % 4 == 0) << "rpn bbox pred channels should be divided by 4";
-
-  const float im_height = bottom_im_info[0];
-  const float im_width = bottom_im_info[1];
+  //const float im_height = bottom_im_info[0];
+  //const float im_width = bottom_im_info[1];
 
   int rpn_pre_nms_top_n;
   int rpn_post_nms_top_n;
@@ -82,19 +81,29 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   LOG_IF(ERROR, rpn_post_nms_top_n <= 0 ) << "rpn_post_nms_top_n : " << rpn_post_nms_top_n;
   if (rpn_pre_nms_top_n <= 0 || rpn_post_nms_top_n <= 0 ) return;
 
-  std::vector<Point4f<Dtype> > anchors;
+  // fyk modify for supporting batch > 1, will start loop
+  std::vector<int> batch_img_inds;//index of images,length same as batch_box_final
+  std::vector<Point4f<Dtype> > batch_box_final;
+  std::vector<Dtype> batch_scores_;
   typedef pair<Dtype, int> sort_pair;
-  std::vector<sort_pair> sort_vector;
-
-  const Dtype bounds[4] = { im_width - 1, im_height - 1, im_width - 1, im_height -1 };
-  const Dtype min_size = bottom_im_info[2] * rpn_min_size;
+  //const Dtype min_size = bottom_im_info[2] * rpn_min_size;
 
   DLOG(ERROR) << "========== generate anchors";
+ for (int batch_i = 0; batch_i < num; batch_i++) {
+  // fyk modify for supporting batch > 1
+  const float im_height = bottom[2]->data_at(batch_i, 0, 0, 0);
+  const float im_width  = bottom[2]->data_at(batch_i, 1, 0, 0);
+  const Dtype min_size  = bottom[2]->data_at(batch_i, 2, 0, 0) * rpn_min_size;
+  const Dtype bounds[4] = { im_width - 1, im_height - 1, im_width - 1, im_height -1 };
+  std::vector<Point4f<Dtype> > anchors;
+  std::vector<sort_pair> sort_vector;
   
   for (int j = 0; j < height; j++) {
     for (int i = 0; i < width; i++) {
       for (int k = 0; k < config_n_anchors; k++) {
-        Dtype score = bottom_rpn_score[config_n_anchors * height * width +
+        // fyk modify for supporting batch > 1
+	int batch_score_num = batch_i * 2 * height * width * config_n_anchors;
+        Dtype score = bottom_rpn_score[ batch_score_num + config_n_anchors * height * width +
                                        k * height * width + j * width + i];
         //const int index = i * height * config_n_anchors + j * config_n_anchors + k;
 
@@ -104,11 +113,13 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
             FrcnnParam::anchors[k * 4 + 2] + i * FrcnnParam::feat_stride,  // shift_x[i][j];
             FrcnnParam::anchors[k * 4 + 3] + j * FrcnnParam::feat_stride); // shift_y[i][j];
 
+	// fyk modify for supporting batch > 1
+	int batch_box_num = batch_i * 4 * height * width * config_n_anchors;
         Point4f<Dtype> box_delta(
-            bottom_rpn_bbox[(k * 4 + 0) * height * width + j * width + i],
-            bottom_rpn_bbox[(k * 4 + 1) * height * width + j * width + i],
-            bottom_rpn_bbox[(k * 4 + 2) * height * width + j * width + i],
-            bottom_rpn_bbox[(k * 4 + 3) * height * width + j * width + i]);
+            bottom_rpn_bbox[batch_box_num + (k * 4 + 0) * height * width + j * width + i],
+            bottom_rpn_bbox[batch_box_num + (k * 4 + 1) * height * width + j * width + i],
+            bottom_rpn_bbox[batch_box_num + (k * 4 + 2) * height * width + j * width + i],
+            bottom_rpn_bbox[batch_box_num + (k * 4 + 3) * height * width + j * width + i]);
 
         Point4f<Dtype> cbox = bbox_transform_inv(anchor, box_delta);
         
@@ -138,26 +149,6 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   DLOG(ERROR) << "========== apply nms, pre nms number is : " << n_anchors;
   std::vector<Point4f<Dtype> > box_final;
   std::vector<Dtype> scores_;
-//fyk: use gpu
-#ifdef USE_GPU_NMS
-  std::vector<float> boxes_host(n_anchors * 4);
-  for (int i=0; i<n_anchors; i++) {
-    const int a_i = sort_vector[i].second;
-    boxes_host[i * 4] = anchors[a_i][0];
-    boxes_host[i * 4 + 1] = anchors[a_i][1];
-    boxes_host[i * 4 + 2] = anchors[a_i][2];
-    boxes_host[i * 4 + 3] = anchors[a_i][3];
-  }
-  int keep_out[n_anchors];//keeped index of boxes_host
-  int num_out;//how many boxes are keeped
-  // call gpu nms
-  _nms(&keep_out[0], &num_out, &boxes_host[0], n_anchors, 4, rpn_nms_thresh);
-  num_out = num_out < rpn_post_nms_top_n ? num_out : rpn_post_nms_top_n;
-  for (int i=0; i<num_out; i++) {
-    box_final.push_back(anchors[sort_vector[keep_out[i]].second]);
-    scores_.push_back(sort_vector[keep_out[i]].first);
-  }
-#else
   for (int i = 0; i < n_anchors && box_final.size() < rpn_post_nms_top_n; i++) {
     if (select[i]) {
       const int cur_i = sort_vector[i].second;
@@ -172,25 +163,33 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
       scores_.push_back(sort_vector[i].first);
     }
   }
-#endif
-  DLOG(ERROR) << "rpn number after nms: " <<  box_final.size();
 
+  DLOG(ERROR) << "rpn number after nms: " <<  box_final.size();
+  // fyk modify for supporting batch > 1
+  std::vector<int> img_inds(box_final.size());
+  std::fill(img_inds.begin(), img_inds.end(), batch_i);
+  batch_img_inds.insert(batch_img_inds.end(),img_inds.begin(), img_inds.end());
+  batch_box_final.insert(batch_box_final.end(),box_final.begin(),box_final.end());
+  batch_scores_.insert(batch_scores_.end(),scores_.begin(),scores_.end());
+ }// end batch loop
+  // fyk modify for supporting batch > 1, to the end
   DLOG(ERROR) << "========== copy to top";
-  top[0]->Reshape(box_final.size(), 5, 1, 1);
+  top[0]->Reshape(batch_box_final.size(), 5, 1, 1);
   Dtype *top_data = top[0]->mutable_cpu_data();
-  CHECK_EQ(box_final.size(), scores_.size());
-  for (size_t i = 0; i < box_final.size(); i++) {
-    Point4f<Dtype> &box = box_final[i];
-    top_data[i * 5] = 0;
+  CHECK_EQ(batch_box_final.size(), batch_scores_.size());
+  for (size_t i = 0; i < batch_box_final.size(); i++) {
+    Point4f<Dtype> &box = batch_box_final[i];
+    //fyk change from 0 to image index in batch,this is not used by following layers,but used by test demo to distinguash which box belong to which image.
+    top_data[i * 5] = batch_img_inds[i];
     for (int j = 1; j < 5; j++) {
       top_data[i * 5 + j] = box[j - 1];
     }
   }
 
   if (top.size() > 1) {
-    top[1]->Reshape(box_final.size(), 1, 1, 1);
-    for (size_t i = 0; i < box_final.size(); i++) {
-      top[1]->mutable_cpu_data()[i] = scores_[i];
+    top[1]->Reshape(batch_box_final.size(), 1, 1, 1);
+    for (size_t i = 0; i < batch_box_final.size(); i++) {
+      top[1]->mutable_cpu_data()[i] = batch_scores_[i];
     }
   }
 

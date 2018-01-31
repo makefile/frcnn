@@ -27,18 +27,11 @@ public:
   // ifoverlap in [LO, HI))
   static float bg_thresh_hi;
   static float bg_thresh_lo;
-  //fyk: data enhancement
-  static bool use_retinex;
-  static bool use_haze_free;
-  // if 0,not use ,if 1 do intensity_hist_equalize;if 2 do_channel_hist_equalize
-  static int use_hist_equalize;
-  // fyk: data random augment
   static bool use_flipped;
-  // fyk: same as YOLO(darknet) param
-  static int data_jitter;
-  static int data_hue;
-  static int data_saturation;
-  static int data_exposure;
+  //fyk: if 0,not use ,if 1 do intensity_hist_equalize;if 2 do_channel_hist_equalize
+  static int use_hist_equalize;
+  //fyk add truely batch_size
+  static int IMS_PER_BATCH;
 
   // Train bounding-box regressors
   static bool bbox_reg;

@@ -27,6 +27,7 @@ Assign object detection proposals to ground-truth targets. Produces proposal
 classification labels and bounding-box regression targets.
 bottom: 'rpn_rois'
 bottom: 'gt_boxes'
+bottom: 'im_info'
 top: 'rois'
 top: 'labels'
 top: 'bbox_targets'
@@ -45,8 +46,8 @@ class FrcnnProposalTargetLayer : public Layer<Dtype> {
 
   virtual inline const char* type() const { return "FrcnnProposalTarget"; }
 
-  virtual inline int MinBottomBlobs() const { return 2; }
-  virtual inline int MaxBottomBlobs() const { return 2; }
+  virtual inline int MinBottomBlobs() const { return 3; }
+  virtual inline int MaxBottomBlobs() const { return 3; }
   virtual inline int MinTopBlobs() const { return 5; }
   virtual inline int MaxTopBlobs() const { return 5; }
 

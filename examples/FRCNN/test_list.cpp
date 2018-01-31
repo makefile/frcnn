@@ -1,7 +1,6 @@
 /**
-	Get inference result of image list.
-	Input  format: list of image names
-	Output format: image name,class_name,x1 y1 x2 y2
+	输入格式：图片文件名列表
+	输出格式：图片,class_name,x1 y1 x2 y2
 */
 #include <gflags/gflags.h>
 #include <glog/logging.h>
@@ -109,17 +108,17 @@ int main(int argc, char** argv){
       //caffe::Frcnn::BBox<float> truth(minx, miny, minx + w, miny+h);
       //      cv::Mat cv_image = cv::imread(image_root + "/" + shot_dir + "/" + image);
       cv::Mat cv_image = cv::imread(image_root+fname);
-      //fyk : do equlize_hist,only for 3-channel
-      int he_case = FrcnnParam::use_hist_equalize; 
-      switch(he_case){
-      case 1:
-      	cv_image = equalizeIntensityHist(cv_image); 
-      	break;
-      case 2:
-      	cv_image = equalizeChannelHist(cv_image);
-      	break;
-      }
-      //fyk end
+ //fyk : do equlize_hist,only for 3-channel
+int he_case = FrcnnParam::use_hist_equalize; 
+switch(he_case){
+case 1:
+	cv_image = equalizeIntensityHist(cv_image); 
+	break;
+case 2:
+	cv_image = equalizeChannelHist(cv_image);
+	break;
+}
+//fyk end
       std::vector<caffe::Frcnn::BBox<float> > results;
       start = std::chrono::steady_clock::now();
       detector.predict(cv_image, results);
@@ -158,10 +157,10 @@ int main(int argc, char** argv){
         int x2 = INT(results[obj][2]);int y2 = INT(results[obj][3]);
 	otfile << results[obj].id << "  " << x1 << " " << y1 << " " << x2 << " " << y2 << "     " << FloatToString(results[obj].confidence) << std::endl;
         //check if near the edge
-	int gap = 3;
-	if ( x1 < gap || y1 < gap || x2 > cv_image.cols - gap || y2 > cv_image.rows - gap ) {
-		std::cout << "WARNING: near edge " << x1 << " " << y1 << " " << x2 << " " << y2 << std::endl;
-		//continue;
+	int gap = 5;
+	if ( x1 < gap || y1 < gap || x2 > cv_image.cols || y2 > cv_image.rows ) {
+		std::cout << "near edge " << x1 << " " << y1 << " " << x2 << " " << y2 << std::endl;
+		continue;
 	}
         submitfile << fname << "," << class_name[results[obj].id] << "," << x1 << " " << y1 << " " << x2 << " " << y2 << std::endl;
       }

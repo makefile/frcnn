@@ -2,7 +2,7 @@
 # Contributions simplifying and improving our build system are welcome!
 
 # cuDNN acceleration switch (uncomment to build with cuDNN).
-# USE_CUDNN := 1
+ USE_CUDNN := 1
 
 # CPU-only switch (uncomment to build without GPU support).
 # CPU_ONLY := 1
@@ -33,9 +33,10 @@ CUDA_DIR := /usr/local/cuda
 # CUDA architecture setting: going with all of them.
 # For CUDA < 6.0, comment the *_50 through *_61 lines for compatibility.
 # For CUDA < 8.0, comment the *_60 and *_61 lines for compatibility.
-CUDA_ARCH := -gencode arch=compute_20,code=sm_20 \
-		-gencode arch=compute_20,code=sm_21 \
-		-gencode arch=compute_30,code=sm_30 \
+#CUDA_ARCH := #-gencode arch=compute_20,code=sm_20 \
+	#	-gencode arch=compute_20,code=sm_21 \
+	
+CUDA_ARCH :=	-gencode arch=compute_30,code=sm_30 \
 		-gencode arch=compute_35,code=sm_35 \
 		-gencode arch=compute_50,code=sm_50 \
 		-gencode arch=compute_52,code=sm_52 \
@@ -47,12 +48,13 @@ CUDA_ARCH := -gencode arch=compute_20,code=sm_20 \
 # atlas for ATLAS (default)
 # mkl for MKL
 # open for OpenBlas
-BLAS := atlas
+#BLAS := atlas
+BLAS := open
 # Custom (MKL/ATLAS/OpenBLAS) include and lib directories.
 # Leave commented to accept the defaults for your choice of BLAS
 # (which should work)!
-# BLAS_INCLUDE := /path/to/your/blas
-# BLAS_LIB := /path/to/your/blas
+ BLAS_INCLUDE := /usr/local/openblas/include
+ BLAS_LIB := /usr/local/openblas/lib
 
 # Homebrew puts openblas in a directory that is not on the standard search path
 # BLAS_INCLUDE := $(shell brew --prefix openblas)/include
@@ -91,8 +93,8 @@ PYTHON_LIB := /usr/lib
 # WITH_PYTHON_LAYER := 1
 
 # Whatever else you find you need goes here.
-INCLUDE_DIRS := $(PYTHON_INCLUDE) /usr/local/include
-LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/lib
+INCLUDE_DIRS := $(PYTHON_INCLUDE) /usr/local/include /usr/include/hdf5/serial/ /usr/local/cuda/include/thrust/system/cuda/detail/
+LIBRARY_DIRS := $(PYTHON_LIB) /usr/local/lib /usr/lib /usr/lib/x86_64-linux-gnu/hdf5/serial/
 
 # If Homebrew is installed at a non standard location (for example your home directory) and you use it for general dependencies
 # INCLUDE_DIRS += $(shell brew --prefix)/include

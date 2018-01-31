@@ -59,7 +59,6 @@ template <typename Dtype>
 void FocalLossLayer<Dtype>::Reshape(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) 
 {
-  //LOG(INFO) << "bottom[0] shape: " << bottom[0]->shape_string() << " bottom[1] shape: " << bottom[1]->shape_string();
   // softmax laye reshape
   LossLayer<Dtype>::Reshape(bottom, top);
   softmax_layer_->Reshape(softmax_bottom_vec_, softmax_top_vec_);

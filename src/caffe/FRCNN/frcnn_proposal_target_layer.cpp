@@ -23,48 +23,27 @@ void FrcnnProposalTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bo
 
   LOG(INFO) << "FrcnnProposalTargetLayer :: " << config_n_classes_ << " classes";
   LOG(INFO) << "FrcnnProposalTargetLayer :: LayerSetUp";
+  // fyk modify for supporting batch > 1
+  //CHECK_EQ(bottom.size() , 3) << "layer should include 3 bottom: rpn_rois,gt_boxes,im_info"; //modify in .hpp file
   // sampled rois (0, x1, y1, x2, y2)
-  top[0]->Reshape(1, 5, 1, 1);
+  const int batch_size = FrcnnParam::IMS_PER_BATCH;
+  top[0]->Reshape(batch_size, 5, 1, 1);
   // labels
-  top[1]->Reshape(1, 1, 1, 1);
+  top[1]->Reshape(batch_size, 1, 1, 1);
   // bbox_targets
-  top[2]->Reshape(1, config_n_classes_ * 4, 1, 1);
+  top[2]->Reshape(batch_size, config_n_classes_ * 4, 1, 1);
   // bbox_inside_weights
-  top[3]->Reshape(1, config_n_classes_ * 4, 1, 1);
+  top[3]->Reshape(batch_size, config_n_classes_ * 4, 1, 1);
   // bbox_outside_weights
-  top[4]->Reshape(1, config_n_classes_ * 4, 1, 1);
+  top[4]->Reshape(batch_size, config_n_classes_ * 4, 1, 1);
 }
 
 template <typename Dtype>
 void FrcnnProposalTargetLayer<Dtype>::Forward_cpu(
     const vector<Blob<Dtype> *> &bottom, const vector<Blob<Dtype> *> &top) {
 
-  vector<Point4f<Dtype> > all_rois;
-  for (int i = 0; i < bottom[0]->num(); i++) {
-    all_rois.push_back(Point4f<Dtype>(
-        bottom[0]->data_at(i,1,0,0),
-        bottom[0]->data_at(i,2,0,0),
-        bottom[0]->data_at(i,3,0,0),
-        bottom[0]->data_at(i,4,0,0)));
-    CHECK_EQ(bottom[0]->data_at(i,0,0,0), 0) << "Only single item batches are supported";
-  }
-
-  vector<Point4f<Dtype> > gt_boxes;
-  vector<int> gt_labels;
-  for (int i = 0; i < bottom[1]->num(); i++) {
-    gt_boxes.push_back(Point4f<Dtype>(
-        bottom[1]->data_at(i,0,0,0),
-        bottom[1]->data_at(i,1,0,0),
-        bottom[1]->data_at(i,2,0,0),
-        bottom[1]->data_at(i,3,0,0)));
-    gt_labels.push_back(bottom[1]->data_at(i,4,0,0));
-    CHECK_GT(gt_labels[i], 0) << "Ground Truth Should Be Greater Than 0";
-  }
-
-  all_rois.insert(all_rois.end(), gt_boxes.begin(), gt_boxes.end());
-
-  DLOG(ERROR) << "gt boxes size: " << gt_boxes.size();
-  const int num_images = 1;
+  // fyk modify for supporting batch > 1
+  const int num_images = FrcnnParam::IMS_PER_BATCH;
   const int rois_per_image = FrcnnParam::batch_size / num_images;
   const int fg_rois_per_image = rois_per_image * FrcnnParam::fg_fraction;
 
@@ -73,8 +52,62 @@ void FrcnnProposalTargetLayer<Dtype>::Forward_cpu(
   vector<int> labels;
   vector<Point4f<Dtype> > rois;
   vector<vector<Point4f<Dtype> > > bbox_targets, bbox_inside_weights;
+  std::vector<int> batch_img_inds;//index of images,length same as rois
 
-  _sample_rois(all_rois, gt_boxes, gt_labels, fg_rois_per_image, rois_per_image, labels, rois, bbox_targets, bbox_inside_weights);
+  int rpn_rois_index = 0;
+  int gt_boxes_index = 0;
+ for (size_t batch_i = 0; batch_i < num_images; batch_i ++) {
+  // fyk modify for supporting batch > 1
+  vector<int> i_labels;
+  vector<Point4f<Dtype> > i_rois;
+  vector<vector<Point4f<Dtype> > > i_bbox_targets, i_bbox_inside_weights;
+  //_sample_rois(all_rois, gt_boxes, gt_labels, fg_rois_per_image, rois_per_image, labels, rois, bbox_targets, bbox_inside_weights);
+  //according to rpn_rois & im_info,split all_rois, gt_boxes, gt_labels to each image
+  vector<Point4f<Dtype> > all_rois;
+  LOG(INFO) << "batch_i "<<batch_i;
+  for (; rpn_rois_index < bottom[0]->num(); rpn_rois_index++) {
+    int i = rpn_rois_index;
+    if(bottom[0]->data_at(i,0,0,0) != batch_i) break;
+    all_rois.push_back(Point4f<Dtype>(
+        bottom[0]->data_at(i,1,0,0),
+        bottom[0]->data_at(i,2,0,0),
+        bottom[0]->data_at(i,3,0,0),
+        bottom[0]->data_at(i,4,0,0)));
+    // fyk modify for supporting batch > 1,coment check
+    //CHECK_EQ(bottom[0]->data_at(i,0,0,0), 0) << "Only single item batches are supported";
+  }
+
+  vector<Point4f<Dtype> > gt_boxes;
+  vector<int> gt_labels;
+  //int box_num = bottom[2]->data_at(batch_i,3,0,0);// in im_info
+  int box_num = bottom[2]->mutable_cpu_data()[batch_i * 5 + 3];// in im_info maybe same as data_at(batch_i,3,0,0);
+  DLOG(INFO) << batch_i << " th image has GT num: " << box_num;
+  for (int j = 0; j < box_num; j++) {
+    int i = gt_boxes_index ++;
+    gt_boxes.push_back(Point4f<Dtype>(
+        bottom[1]->data_at(i,0,0,0),
+        bottom[1]->data_at(i,1,0,0),
+        bottom[1]->data_at(i,2,0,0),
+        bottom[1]->data_at(i,3,0,0)));
+    gt_labels.push_back(bottom[1]->data_at(i,4,0,0));
+    CHECK_GT(gt_labels[j], 0) << "Ground Truth Should Be Greater Than 0";
+    CHECK_LT(gt_labels[j], FrcnnParam::n_classes);//fyk
+  }
+
+  all_rois.insert(all_rois.end(), gt_boxes.begin(), gt_boxes.end());
+
+  _sample_rois(all_rois, gt_boxes, gt_labels, fg_rois_per_image, rois_per_image, i_labels, i_rois, i_bbox_targets, i_bbox_inside_weights);
+  labels.insert(labels.end(),i_labels.begin(),i_labels.end());
+  rois.insert(rois.end(),i_rois.begin(),i_rois.end());
+  bbox_targets.insert(bbox_targets.end(),i_bbox_targets.begin(),i_bbox_targets.end());
+  bbox_inside_weights.insert(bbox_inside_weights.end(),i_bbox_inside_weights.begin(),i_bbox_inside_weights.end());
+  CHECK_GT(i_rois.size(),0);
+  std::vector<int> img_inds(i_rois.size());
+  std::fill(img_inds.begin(), img_inds.end(), batch_i);
+  batch_img_inds.insert(batch_img_inds.end(),img_inds.begin(), img_inds.end());
+ }//end for
+  //fyk check
+  CHECK_EQ(bottom[1]->num(),gt_boxes_index);
 
   CHECK_EQ(labels.size(), rois.size());
   CHECK_EQ(labels.size(), bbox_targets.size());
@@ -83,9 +116,11 @@ void FrcnnProposalTargetLayer<Dtype>::Forward_cpu(
   DLOG(ERROR) << "top[0]-> " << batch_size << " , 5, 1, 1";
   // sampled rois
   top[0]->Reshape(batch_size, 5, 1, 1); // rois
-  caffe_set(top[0]->count(), Dtype(0), top[0]->mutable_cpu_data());
+  //caffe_set(top[0]->count(), Dtype(0), top[0]->mutable_cpu_data());
   Dtype *rois_data = top[0]->mutable_cpu_data();
   for (int i = 0; i < batch_size; i++) {
+    //fyk change from 0 to image index in batch,this is not used by following layers,but used by test demo to distinguash which box belong to which image.
+    rois_data[ top[0]->offset(i,0,0,0) ] = batch_img_inds[i];
     rois_data[ top[0]->offset(i,1,0,0) ] = rois[i][0];
     rois_data[ top[0]->offset(i,2,0,0) ] = rois[i][1];
     rois_data[ top[0]->offset(i,3,0,0) ] = rois[i][2];
@@ -204,6 +239,7 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
   std::vector<Point4f<Dtype> > _gt_boxes(keep_inds.size());
   for (size_t i = 0; i < keep_inds.size(); ++ i) {
     labels[i] = _labels[keep_inds[i]];
+    CHECK_LT(labels[i], FrcnnParam::n_classes);//fyk
     rois[i] = all_rois[keep_inds[i]];
     _gt_boxes[i] =
         gt_assignment[keep_inds[i]] >= 0 ? gt_boxes[gt_assignment[keep_inds[i]]] : Point4f<Dtype>();

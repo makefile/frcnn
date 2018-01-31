@@ -122,7 +122,7 @@ int main(int argc, char** argv){
       float iou = caffe::Frcnn::get_iou(best_bb, truth);
 
       std::cout<<"Finished image "<<fname<<" with intersection "<<iou<<" in "<<std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()<<" ms"<<std::endl;
-      //const int ori_res_size = results.size();
+      const int ori_res_size = results.size();
       results = filtered_res;
       for (size_t obj = 0; obj < results.size(); obj++) {
         otfile << results[obj].id << "  " << INT(results[obj][0]) << " " << INT(results[obj][1]) << " " << INT(results[obj][2]) << " " << INT(results[obj][3]) << "     " << FloatToString(results[obj].confidence) << std::endl;

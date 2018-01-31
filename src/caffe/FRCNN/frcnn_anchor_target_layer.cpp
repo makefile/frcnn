@@ -27,14 +27,16 @@ void FrcnnAnchorTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bott
 
   const int height = bottom[0]->height();
   const int width = bottom[0]->width();
+  // fyk modify for supporting batch > 1
+  const int batch_size = FrcnnParam::IMS_PER_BATCH;
   // labels
-  top[0]->Reshape(1, 1, config_n_anchors_ * height, width);
+  top[0]->Reshape(batch_size, 1, config_n_anchors_ * height, width);
   // bbox_targets
-  top[1]->Reshape(1, config_n_anchors_ * 4, height, width);
+  top[1]->Reshape(batch_size, config_n_anchors_ * 4, height, width);
   // bbox_inside_weights
-  top[2]->Reshape(1, config_n_anchors_ * 4, height, width);
+  top[2]->Reshape(batch_size, config_n_anchors_ * 4, height, width);
   // bbox_outside_weights
-  top[3]->Reshape(1, config_n_anchors_ * 4, height, width);
+  top[3]->Reshape(batch_size, config_n_anchors_ * 4, height, width);
 
   LOG(INFO) << "FrcnnAnchorTargetLayer : " << config_n_anchors_ << " anchors , " << feat_stride_ << " feat_stride , " << border_ << " allowed_border";
   LOG(INFO) << "FrcnnAnchorTargetLayer : FrcnnParam::rpn_negative_overlap : " << FrcnnParam::rpn_negative_overlap;
@@ -53,23 +55,24 @@ void FrcnnAnchorTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bott
 template <typename Dtype>
 void FrcnnAnchorTargetLayer<Dtype>::Forward_cpu(
   const vector<Blob<Dtype> *> &bottom, const vector<Blob<Dtype> *> &top) {
-  DLOG(ERROR) << "========== enter anchor target layer {} " << bottom[2]->cpu_data()[0] << ", " << bottom[2]->cpu_data()[1] << " , scales : " << bottom[2]->cpu_data()[2] << " {} height : " << bottom[0]->height() << " width : " << bottom[0]->width();
+  // fyk modify for supporting batch > 1,comment this log
+  //DLOG(ERROR) << "========== enter anchor target layer {} " << bottom[2]->cpu_data()[0] << ", " << bottom[2]->cpu_data()[1] << " , scales : " << bottom[2]->cpu_data()[2] << " {} height : " << bottom[0]->height() << " width : " << bottom[0]->width();
 
   //const Dtype *bottom_gt_bbox = bottom[1]->cpu_data();
-  const Dtype *bottom_im_info = bottom[2]->cpu_data();
+  //const Dtype *bottom_im_info = bottom[2]->cpu_data();
 
   const int num = bottom[0]->num();
   const int height = bottom[0]->height();
   const int width = bottom[0]->width();
-
-  CHECK(num == 1) << "only single item batches are supported";
-
-  const Dtype im_height = bottom_im_info[0];
-  const Dtype im_width = bottom_im_info[1];
+  // fyk modify for supporting batch > 1,comment this check
+  //CHECK(num == 1) << "only single item batches are supported";
+  //const Dtype im_height = bottom_im_info[0];
+  //const Dtype im_width = bottom_im_info[1];
 
   DLOG(ERROR) << "========== get gt boxes : " << bottom[1]->num();
   // gt boxes (x1, y1, x2, y2, label)
-  vector<Point4f<Dtype> > gt_boxes;
+  // fyk modify for supporting batch > 1,comment this 
+  /*vector<Point4f<Dtype> > gt_boxes;
   for (int i = 0; i < bottom[1]->num(); i++) {
     //const Dtype * base_address = &bottom_gt_bbox[(i * bottom[1]->offset(1))];
     //gt_boxes.push_back(Point4f<Dtype>(base_address[0], base_address[1], base_address[2],base_address[3]));
@@ -82,7 +85,26 @@ void FrcnnAnchorTargetLayer<Dtype>::Forward_cpu(
     CHECK(gt_boxes[i][2]<=im_width && gt_boxes[i][3]<=im_height);
     //DLOG(ERROR) << "============= " << i << "  : " << gt_boxes[i][0] << ", " << gt_boxes[i][1] << ", " << gt_boxes[i][2] << ", " << gt_boxes[i][3];
   }
-
+  */
+  vector<vector<int> > batch_inds_inside,batch_labels;
+  vector<vector<Point4f<Dtype> > > batch_bbox_outside_weights,batch_bbox_inside_weights,batch_bbox_targets;
+  int label_index = 0;
+  for (int batch_i = 0; batch_i < num; batch_i++) {
+  	const Dtype im_height = bottom[2]->data_at(batch_i, 0, 0, 0);
+  	const Dtype im_width  = bottom[2]->data_at(batch_i, 1, 0, 0);
+	vector<Point4f<Dtype> > gt_boxes;
+	int box_num = bottom[2]->data_at(batch_i, 3, 0, 0);
+	for (int j = 0; j < box_num; j++ ) {
+		label_index ++;
+		gt_boxes.push_back(Point4f<Dtype>(
+			bottom[1]->data_at(label_index, 0, 0, 0),
+			bottom[1]->data_at(label_index, 1, 0, 0),
+			bottom[1]->data_at(label_index, 2, 0, 0),
+			bottom[1]->data_at(label_index, 3, 0, 0)));
+		CHECK(gt_boxes[j][0]>=0 && gt_boxes[j][1]>=0);
+		CHECK(gt_boxes[j][2]<=im_width && gt_boxes[j][3]<=im_height);
+	}
+ //still for loop
 
   // Generate anchors
   DLOG(ERROR) << "========== generate anchors";
@@ -288,17 +310,30 @@ void FrcnnAnchorTargetLayer<Dtype>::Forward_cpu(
     }
   }
 
-  Info_Stds_Means_AvePos(bbox_targets, labels);
+  // fyk modify for supporting batch > 1,from here to the end
+  batch_labels.push_back(labels);
+  batch_bbox_targets.push_back(bbox_targets);
+  batch_bbox_inside_weights.push_back(bbox_inside_weights);
+  batch_bbox_outside_weights.push_back(bbox_outside_weights);
+  batch_inds_inside.push_back(inds_inside);
+  //batch_labels.insert(batch_labels.end(),labels.begin(),labels.end());
+  //batch_bbox_targets.insert(batch_bbox_targets.end(),bbox_targets.begin(),bbox_targets.end());
+  //batch_bbox_inside_weights.insert(batch_bbox_inside_weights.end(),bbox_inside_weights.begin(),bbox_inside_weights.end());
+  //batch_bbox_outside_weights.insert(batch_bbox_outside_weights.end(),bbox_outside_weights.begin(),bbox_outside_weights.end());
+  //batch_inds_inside.insert(batch_inds_inside.end(),inds_inside.begin(),inds_inside.end());
+ }//end loop of batch_size(num)
+  //Info_Stds_Means_AvePos(batch_bbox_targets, batch_labels);
+  Info_Stds_Means_AvePos(batch_bbox_targets[0], batch_labels[0]);//only show a part
 
   DLOG(ERROR) << "========== copy to top";
   // labels
-  top[0]->Reshape(1, 1, config_n_anchors_ * height, width);
+  top[0]->Reshape(num, 1, config_n_anchors_ * height, width);
   // bbox_targets
-  top[1]->Reshape(1, config_n_anchors_ * 4, height, width);
+  top[1]->Reshape(num, config_n_anchors_ * 4, height, width);
   // bbox_inside_weights
-  top[2]->Reshape(1, config_n_anchors_ * 4, height, width);
+  top[2]->Reshape(num, config_n_anchors_ * 4, height, width);
   // bbox_outside_weights
-  top[3]->Reshape(1, config_n_anchors_ * 4, height, width);
+  top[3]->Reshape(num, config_n_anchors_ * 4, height, width);
   
   Dtype* top_labels = top[0]->mutable_cpu_data();
   Dtype* top_bbox_targets = top[1]->mutable_cpu_data();
@@ -309,23 +344,25 @@ void FrcnnAnchorTargetLayer<Dtype>::Forward_cpu(
   caffe_set(top[2]->count(), Dtype(0), top[2]->mutable_cpu_data());
   caffe_set(top[3]->count(), Dtype(0), top[3]->mutable_cpu_data());
   
+//  CHECK_EQ(inds_inside.size(), bbox_targets.size());
+//  CHECK_EQ(inds_inside.size(), bbox_outside_weights.size());
+//  CHECK_EQ(bbox_inside_weights.size(), bbox_outside_weights.size());
 
-  CHECK_EQ(inds_inside.size(), bbox_targets.size());
-  CHECK_EQ(inds_inside.size(), bbox_outside_weights.size());
-  CHECK_EQ(bbox_inside_weights.size(), bbox_outside_weights.size());
-
+ for (int batch_i = 0; batch_i < num; batch_i++) {
+  vector<int> inds_inside = batch_inds_inside[batch_i],labels = batch_labels[batch_i];
+  vector<Point4f<Dtype> > bbox_outside_weights=batch_bbox_outside_weights[batch_i],bbox_inside_weights=batch_bbox_inside_weights[batch_i],bbox_targets=batch_bbox_targets[batch_i];
   for (size_t index = 0; index < inds_inside.size(); index++) {
     const int _anchor = inds_inside[index] % config_n_anchors_;
     const int _height = (inds_inside[index] / config_n_anchors_) / width;
     const int _width  = (inds_inside[index] / config_n_anchors_) % width;
-    top_labels[ top[0]->offset(0,0,_anchor*height+_height,_width) ] = labels[index];
+    top_labels[ top[0]->offset(batch_i,0,_anchor*height+_height,_width) ] = labels[index];
     for (int cor = 0; cor < 4; cor++) {
-      top_bbox_targets        [ top[1]->offset(0,_anchor*4+cor,_height,_width) ] = bbox_targets[index][cor];
-      top_bbox_inside_weights [ top[2]->offset(0,_anchor*4+cor,_height,_width) ] = bbox_inside_weights[index][cor];
-      top_bbox_outside_weights[ top[3]->offset(0,_anchor*4+cor,_height,_width) ] = bbox_outside_weights[index][cor];
+      top_bbox_targets        [ top[1]->offset(batch_i,_anchor*4+cor,_height,_width) ] = bbox_targets[index][cor];
+      top_bbox_inside_weights [ top[2]->offset(batch_i,_anchor*4+cor,_height,_width) ] = bbox_inside_weights[index][cor];
+      top_bbox_outside_weights[ top[3]->offset(batch_i,_anchor*4+cor,_height,_width) ] = bbox_outside_weights[index][cor];
     }
   }
-  
+ }//end batch loop 
 }
 
 template <typename Dtype>
