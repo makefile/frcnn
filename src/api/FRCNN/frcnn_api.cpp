@@ -115,6 +115,10 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
   CHECK_EQ(cls_num , caffe::Frcnn::FrcnnParam::n_classes);
   results.clear();
 
+  static float zero_means[] = {0.0, 0.0, 0.0, 0.0};
+  static float one_stds[] = {1.0, 1.0, 1.0, 1.0};
+  static float* means = FrcnnParam::bbox_normalize_targets ? FrcnnParam::bbox_normalize_means : zero_means;
+  static float* stds  = FrcnnParam::bbox_normalize_targets ? FrcnnParam::bbox_normalize_stds : one_stds;
   for (int cls = 1; cls < cls_num; cls++) { 
     vector<BBox<float> > bbox;
     for (int i = 0; i < box_num; i++) { 
@@ -127,10 +131,10 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
                      rois->cpu_data()[(i * 5) + 3]/scale_factor,
                      rois->cpu_data()[(i * 5) + 4]/scale_factor);
 
-      Point4f<float> delta(bbox_pred->cpu_data()[(i * cls_num + cls) * 4 + 0],
-                     bbox_pred->cpu_data()[(i * cls_num + cls) * 4 + 1],
-                     bbox_pred->cpu_data()[(i * cls_num + cls) * 4 + 2],
-                     bbox_pred->cpu_data()[(i * cls_num + cls) * 4 + 3]);
+      Point4f<float> delta(bbox_pred->cpu_data()[(i * cls_num + cls) * 4 + 0] * stds[0] + means[0],
+                     bbox_pred->cpu_data()[(i * cls_num + cls) * 4 + 1] * stds[1] + means[1],
+                     bbox_pred->cpu_data()[(i * cls_num + cls) * 4 + 2] * stds[2] + means[2],
+                     bbox_pred->cpu_data()[(i * cls_num + cls) * 4 + 3] * stds[3] + means[3]);
 
       Point4f<float> box = caffe::Frcnn::bbox_transform_inv(roi, delta);
       //fyk clip predicted boxes to image
