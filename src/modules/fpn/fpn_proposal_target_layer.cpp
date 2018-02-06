@@ -242,8 +242,17 @@ void FPNProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> > &
             keep_inds.insert(keep_inds.end(), bg_inds.begin(), bg_inds.end());
         }
     }else{
+	if (bg_inds.size() < 0) {
+            for (int i = 0; i < all_rois.size(); ++i) {
+	      // Negative ROIs are those with max IoU 0.1-0.5 (hard example mining)
+	      // To hard example mine or not to hard example mine, that's the question
+              if (max_overlaps[i] < FrcnnParam::bg_thresh_hi) {
+                bg_inds.push_back(i);
+              }
+            }
+	}
         // Fill the rest with repeated bg rois.
-        while (remaining > 0) {
+        if (bg_inds.size() > 0) while (remaining > 0) {
             int rmin = std::min(remaining, (int)bg_inds.size());
             keep_inds.insert(keep_inds.end(), bg_inds.begin(), bg_inds.begin() + rmin);
             remaining -= rmin;
