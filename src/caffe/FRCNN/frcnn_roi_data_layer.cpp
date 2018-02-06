@@ -139,6 +139,8 @@ void FrcnnRoiDataLayer<Dtype>::DataLayerSetUp(
   CHECK_GT(max_short_, 0);
   CHECK_GT(max_long_, 0);
 
+  max_short_ = int(std::ceil(max_short_ / float(FrcnnParam::im_size_align)) * FrcnnParam::im_size_align);
+  max_long_ = int(std::ceil(max_long_ / float(FrcnnParam::im_size_align)) * FrcnnParam::im_size_align);
   top[0]->Reshape(batch_size, 3, max_short_, max_long_);
   for (int i = 0; i < this->prefetch_.size(); ++i) {
     this->prefetch_[i]->data_.Reshape(batch_size, 3, max_short_, max_long_);
@@ -339,6 +341,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
     // pad to align im_size_align
     int new_im_height = int(std::ceil(src.rows / float(FrcnnParam::im_size_align)) * FrcnnParam::im_size_align);
     int new_im_width = int(std::ceil(src.cols / float(FrcnnParam::im_size_align)) * FrcnnParam::im_size_align);
+    //std::cout << "align size: "<< new_im_height << ' '<< new_im_width << std::endl;
     cv::Mat padded_im = cv::Mat::zeros(cv::Size(new_im_width, new_im_height), CV_32FC3);
     float *res_mat_data = (float *)src.data;
     float *new_mat_data = (float *)padded_im.data;
