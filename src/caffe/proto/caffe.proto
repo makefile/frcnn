@@ -429,6 +429,8 @@ message LayerParameter {
   optional MultiRBoxLossParameter multirbox_loss_param = 			216;
   optional AnnotatedDataParameter annotated_data_param = 			217;
   optional AnnotatedRDataParameter annotated_r_data_param = 			218;
+  // fyk add for SSD
+  optional DetectionOutputParameter detection_output_param = 219;
 
 }
 
@@ -702,6 +704,37 @@ message MultiRBoxLossParameter {
   optional float prior_height = 25;
   optional bool regress_angle = 26;
   optional bool regress_size = 27;
+}
+// Message that store parameters used by DetectionOutputLayer
+message DetectionOutputParameter {
+  // Number of classes to be predicted. Required!
+  optional uint32 num_classes = 1;
+  // If true, bounding box are shared among different classes.
+  optional bool share_location = 2 [default = true];
+  // Background label id. If there is no background class,
+  // set it as -1.
+  optional int32 background_label_id = 3 [default = 0];
+  // Parameters used for non maximum suppression.
+  optional NonMaximumSuppressionParameter nms_param = 4;
+  // Parameters used for saving detection results.
+  optional SaveOutputParameter save_output_param = 5;
+  // Type of coding method for bbox.
+  optional PriorBoxParameter.CodeType code_type = 6 [default = CORNER];
+  // If true, variance is encoded in target; otherwise we need to adjust the
+  // predicted offset accordingly.
+  optional bool variance_encoded_in_target = 8 [default = false];
+  // Number of total bboxes to be kept per image after nms step.
+  // -1 means keeping all bboxes after nms step.
+  optional int32 keep_top_k = 7 [default = -1];
+  // Only consider detections whose confidences are larger than a threshold.
+  // If not provided, consider all boxes.
+  optional float confidence_threshold = 9;
+  // If true, visualize the detection results.
+  optional bool visualize = 10 [default = false];
+  // The threshold used to visualize the detection results.
+  optional float visualize_threshold = 11;
+  // If provided, save outputs to video file.
+  optional string save_file = 12;
 }
 message RDetectionOutputParameter {
   // Number of classes to be predicted. Required!

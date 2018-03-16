@@ -268,7 +268,8 @@ ifeq ($(LINUX), 1)
 	endif
 	# boost::thread is reasonably called boost_thread (compare OS X)
 	# We will also explicitly add stdc++ to the link target.
-	LIBRARIES += boost_thread stdc++
+	# LIBRARIES += boost_thread stdc++
+	LIBRARIES += boost_thread stdc++ boost_regex # boost_regex for SSD
 	VERSIONFLAGS += -Wl,-soname,$(DYNAMIC_VERSIONED_NAME_SHORT) -Wl,-rpath,$(ORIGIN)/../lib
 endif
 
