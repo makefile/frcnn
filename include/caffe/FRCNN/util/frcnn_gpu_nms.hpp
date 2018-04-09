@@ -1,6 +1,10 @@
 #ifndef CAFFE_FRCNN_GPU_NMS_HPP_
 #define CAFFE_FRCNN_GPU_NMS_HPP_
 
+#ifndef CPU_ONLY
+#define USE_GPU_NMS //fyk: accelerate
+#endif
+
 namespace caffe {
 
 namespace Frcnn {

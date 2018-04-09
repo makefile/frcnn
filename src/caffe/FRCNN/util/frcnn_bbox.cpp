@@ -8,7 +8,6 @@ namespace Frcnn {
 INSTANTIATE_CLASS(Point4f);
 INSTANTIATE_CLASS(BBox);
 
-#define USE_GPU_NMS //fyk: accelerate
 template <typename Dtype>
 Dtype get_iou(const Point4f<Dtype> &A, const Point4f<Dtype> &B) {
   const Dtype xx1 = std::max(A[0], B[0]);

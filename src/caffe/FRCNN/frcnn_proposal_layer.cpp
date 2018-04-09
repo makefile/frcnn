@@ -11,8 +11,6 @@
 #include "caffe/FRCNN/util/frcnn_param.hpp"  
 #include "caffe/FRCNN/util/frcnn_gpu_nms.hpp"
 
-#define USE_GPU_NMS //fyk: accelerate
-
 namespace caffe {
 
 namespace Frcnn {

@@ -421,7 +421,10 @@ MODULE_CXX_SRCS := $(shell find $(MODULE_SRC) ! -name "test_*.cpp" -name "*.cpp"
 MODULE_CU_SRCS := $(shell find $(MODULE_SRC) ! -name "test_*.cu" -name "*.cu")
 MODULE_CXX_OBJS := $(addprefix $(BUILD_DIR)/, ${MODULE_CXX_SRCS:.cpp=.o})
 MODULE_CU_OBJS := $(addprefix $(BUILD_DIR)/cuda/, ${MODULE_CU_SRCS:.cu=.o})
-MODULE_OBJS := $(MODULE_CXX_OBJS) $(MODULE_CU_OBJS)
+MODULE_OBJS := $(MODULE_CXX_OBJS)
+ifneq ($(CPU_ONLY), 1)
+    MODULE_OBJS += $(MODULE_CU_OBJS)
+endif
 # fyk end
 
 # BLAS configuration (default = ATLAS)
