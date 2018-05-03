@@ -1,12 +1,14 @@
-**Special Feature for This Caffe Repository**
+**Special Features for This Caffe Repository**
 
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
-- support SSD (not tested formally)
-- script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory
+- support SSD
+- script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory: 'examples/FRCNN/res50/gen\_merged\_model.py'
 - support snapshot after got -SIGTERM (kill command's default signal)
 - logger tools by VisualDL which can visualize loss scalars and feature images .etc
 - Faster rcnn joint train, test and evaluate
 - Action recognition (Two Stream CNN)
+- CTPN layers for scene text detection, port from [tianzhi0549/CTPN](https://github.com/tianzhi0549/CTPN)
+- support CUDA 8.0, CuDNN 7.0
 
 **Special layers**
 
@@ -16,6 +18,7 @@
 - Eltwise layer using in-place sum to reduce memory, from [this PR](https://github.com/BVLC/caffe/pull/3708)
 - caffe layer module, layer definition and usage like `Python layer`,from caffe [PR#5294](https://github.com/BVLC/caffe/pull/5294)
 - CuDNNDeconv layer, Depth-wise Conv layer
+- CTPN layers include LSTM layer implemented by [@junhyukoh](https://github.com/junhyukoh/caffe-lstm),which is faster than upstream master branch of Caffe.
 
 **Data Preprocess**
 
@@ -101,7 +104,7 @@ because the regression value is normalized during training and we should recover
 
 ### Detail
 
-Shells and prototxts for different models are listed in the `examples/FRCNN` and `models/FRCNN`
+Scripts and prototxts for different models are listed in the `examples/FRCNN` and `models/FRCNN`
 
 More details about the code in include and src directory:
 - `api/FRCNN` for demo and test api
@@ -110,6 +113,7 @@ More details about the code in include and src directory:
 - `modules` and `yaml-cpp` relate to Caffe module layers, which include FPN layers .etc
 - `python/frcnn` relates to pybind11 interface for demo
 - `caffe/ACTION_REC` Two-Stream Convolutional Networks for Action Recognition in Video
+- `caffe/CTPN` relates to CTPN special layers for scene text detection
 
 ### Commands, Rebase From Caffe Master
 

@@ -432,6 +432,11 @@ message LayerParameter {
   // fyk add for SSD
   optional DetectionOutputParameter detection_output_param = 219;
 
+  // fyk for CTPN text detection
+  optional TransposeParameter transpose_param = 230;
+  optional ReverseParameter reverse_param = 231;
+  optional LstmParameter lstm_param = 232;
+
 }
 
 // fyk add for Caffe module layer
@@ -2235,3 +2240,24 @@ message PReLUParameter {
   // Whether or not slope parameters are shared across channels.
   optional bool channel_shared = 2 [default = false];
 }
+
+// for CTPN text detection
+message TransposeParameter {
+  // For example, if you want to transpose NxCxHxW into WxNxHxC,
+  // the parameter should be the following:
+  // transpose_param { dim: 3 dim: 0 dim: 2 dim: 1 }
+  // ie, if the i-th dim has value n, then the i-th axis of top is equal to the n-th axis of bottom.
+  repeated int32 dim=1;
+}
+message ReverseParameter {
+  optional int32 axis=1 [default=0];
+}
+// Message that stores parameters used by LstmLayer
+message LstmParameter {
+  optional uint32 num_output = 1; // The number of outputs for the layer
+  optional float clipping_threshold = 2 [default = 0.0];
+  optional FillerParameter weight_filler = 3; // The filler for weight
+  optional FillerParameter bias_filler = 4; // The filler for the bias
+  optional uint32 batch_size = 5 [default = 1];
+}
+
