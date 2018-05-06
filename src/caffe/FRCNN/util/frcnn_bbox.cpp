@@ -22,9 +22,10 @@ Dtype get_iou(const Point4f<Dtype> &A, const Point4f<Dtype> &B) {
 template float get_iou(const Point4f<float> &A, const Point4f<float> &B);
 template double get_iou(const Point4f<double> &A, const Point4f<double> &B);
 
-#ifdef USE_GPU_NMS
 template <typename Dtype>
-vector<vector<Dtype> > get_ious(const vector<Point4f<Dtype> > &A, const vector<Point4f<Dtype> > &B) {
+vector<vector<Dtype> > get_ious(const vector<Point4f<Dtype> > &A, const vector<Point4f<Dtype> > &B, bool use_gpu) {
+#ifdef USE_GPU_NMS
+  if (use_gpu) {
     vector<float> bboxes(A.size() * 4);
     vector<float> query_boxes(B.size() * 4);
     for(int i=0;i<A.size();i++) {
@@ -50,19 +51,23 @@ vector<vector<Dtype> > get_ious(const vector<Point4f<Dtype> > &A, const vector<P
             ious[i][j] = overlaps[i * k + j];
     delete overlaps;
     return ious;
-}
+  } else {
+    vector<vector<Dtype> >ious;
+    for (size_t i = 0; i < A.size(); i++) {
+      ious.push_back(get_ious(A[i], B));
+    }
+    return ious;
+  }
 #else
-template <typename Dtype>
-vector<vector<Dtype> > get_ious(const vector<Point4f<Dtype> > &A, const vector<Point4f<Dtype> > &B) {
   vector<vector<Dtype> >ious;
   for (size_t i = 0; i < A.size(); i++) {
     ious.push_back(get_ious(A[i], B));
   }
   return ious;
-}
 #endif
-template vector<vector<float> > get_ious(const vector<Point4f<float> > &A, const vector<Point4f<float> > &B);
-template vector<vector<double> > get_ious(const vector<Point4f<double> > &A, const vector<Point4f<double> > &B);
+}
+template vector<vector<float> > get_ious(const vector<Point4f<float> > &A, const vector<Point4f<float> > &B, bool use_gpu);
+template vector<vector<double> > get_ious(const vector<Point4f<double> > &A, const vector<Point4f<double> > &B, bool use_gpu);
 
 template <typename Dtype>
 vector<Dtype> get_ious(const Point4f<Dtype> &A, const vector<Point4f<Dtype> > &B) {

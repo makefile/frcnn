@@ -80,6 +80,7 @@ class FrcnnProposalLayer : public Layer<Dtype> {
   int *selected_flags_;
   int *gpu_keep_indices_;
 #endif
+  bool use_gpu_nms_in_forward_cpu = false;
 };
 
 }  // namespace frcnn

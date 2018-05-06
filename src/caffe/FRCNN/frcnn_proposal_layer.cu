@@ -112,6 +112,7 @@ template <typename Dtype>
 void FrcnnProposalLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype> *> &bottom,
     const vector<Blob<Dtype> *> &top) {
  if(this->phase_ == TEST) {
+    this->use_gpu_nms_in_forward_cpu = true; // set flag to be used in forward_cpu
     Forward_cpu(bottom, top);
     return ;
  }else{

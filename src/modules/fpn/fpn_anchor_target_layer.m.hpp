@@ -66,6 +66,9 @@ class FPNAnchorTargetLayer : public Layer<Dtype> {
   std::vector<float> anchor_ratios;
   float border_;
 
+  // fyk
+  bool use_gpu_nms_in_forward_cpu = false;
+
   Point4f<Dtype> _sum;
   Point4f<Dtype> _squared_sum;
   int _counts;

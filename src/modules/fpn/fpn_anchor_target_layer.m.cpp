@@ -190,7 +190,8 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
   vector<Dtype> gt_max_overlaps(gt_boxes.size(), -1);
   vector<int> gt_argmax_overlaps(gt_boxes.size(), -1);
 
-  vector<vector<Dtype> > ious = get_ious(anchors, gt_boxes);
+  vector<vector<Dtype> > ious = get_ious(anchors, gt_boxes, this->use_gpu_nms_in_forward_cpu);
+  this->use_gpu_nms_in_forward_cpu = false; // restore
 
   for (int ia = 0; ia < n_anchors; ia++) {
     for (size_t igt = 0; igt < gt_boxes.size(); igt++) {

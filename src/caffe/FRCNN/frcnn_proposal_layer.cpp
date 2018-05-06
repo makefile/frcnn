@@ -140,6 +140,7 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   std::vector<Dtype> scores_;
 //fyk: use gpu
 #ifdef USE_GPU_NMS
+if (this->use_gpu_nms_in_forward_cpu) {
   std::vector<float> boxes_host(n_anchors * 4);
   for (int i=0; i<n_anchors; i++) {
     const int a_i = sort_vector[i].second;
@@ -157,7 +158,11 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
     box_final.push_back(anchors[sort_vector[keep_out[i]].second]);
     scores_.push_back(sort_vector[keep_out[i]].first);
   }
-#else
+  this->use_gpu_nms_in_forward_cpu = false;
+  goto AFTER_CPU_NMS_CODE;
+}
+#endif
+//CPU_NMS_CODE:
   for (int i = 0; i < n_anchors && box_final.size() < rpn_post_nms_top_n; i++) {
     if (select[i]) {
       const int cur_i = sort_vector[i].second;
@@ -172,7 +177,7 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
       scores_.push_back(sort_vector[i].first);
     }
   }
-#endif
+AFTER_CPU_NMS_CODE:
   DLOG(ERROR) << "rpn number after nms: " <<  box_final.size();
 
   DLOG(ERROR) << "========== copy to top";

@@ -139,7 +139,8 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
 
   CHECK_EQ(gt_label.size(), gt_boxes.size());
   // overlaps: (rois x gt_boxes)
-  std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes); 
+  std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes, this->use_gpu_nms_in_forward_cpu);
+  this->use_gpu_nms_in_forward_cpu = false; // restore
   std::vector<Dtype> max_overlaps(all_rois.size(), 0);
   std::vector<int> gt_assignment(all_rois.size(), -1);
   std::vector<int> _labels(all_rois.size());

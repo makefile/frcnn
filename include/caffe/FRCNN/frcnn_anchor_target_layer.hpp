@@ -63,6 +63,9 @@ class FrcnnAnchorTargetLayer : public Layer<Dtype> {
   int feat_stride_;
   float border_;
 
+  // fyk
+  bool use_gpu_nms_in_forward_cpu = false;
+
   Point4f<Dtype> _sum;
   Point4f<Dtype> _squared_sum;
   int _counts;

@@ -70,6 +70,8 @@ class FrcnnProposalTargetLayer : public Layer<Dtype> {
   int _fg_num_;
   int _bg_num_;
  
+  // fyk
+  bool use_gpu_nms_in_forward_cpu = false;
 };
 
 }  // namespace frcnn

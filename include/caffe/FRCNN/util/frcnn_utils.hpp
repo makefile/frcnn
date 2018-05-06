@@ -346,7 +346,7 @@ template <typename Dtype>
 Dtype get_iou(const Point4f<Dtype> &A, const Point4f<Dtype> &B);
 
 template <typename Dtype>
-vector<vector<Dtype> > get_ious(const vector<Point4f<Dtype> > &A, const vector<Point4f<Dtype> > &B);
+vector<vector<Dtype> > get_ious(const vector<Point4f<Dtype> > &A, const vector<Point4f<Dtype> > &B, bool use_gpu);
 template <typename Dtype>
 vector<vector<Dtype> > skew_ious(const vector<Point5f<Dtype> > &A, const vector<Point5f<Dtype> > &B);
 

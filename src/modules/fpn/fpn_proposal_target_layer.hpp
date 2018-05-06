@@ -71,6 +71,7 @@ class FPNProposalTargetLayer : public Layer<Dtype> {
   int _bg_num_;
   int _forward_iter_; //fyk add for logging periodly
  
+  bool use_gpu_nms_in_forward_cpu = false;// fyk
 };
 
 }  // namespace frcnn
