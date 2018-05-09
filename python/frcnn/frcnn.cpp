@@ -15,11 +15,13 @@ class FRCNNDetector {
   public:
     FRCNNDetector(std::string &proto_file, std::string &weight_file, std::string &config_file, int gpu_id=0);
     // [[cls_id,x1,y1,x2,y2,confidence],]
-    std::vector<std::vector<float> > predict(std::string &img_path);
-    std::vector<std::vector<float> > predict_numpy(py::array_t<float> img_numpy);
+    std::vector<std::vector<float> > predict(std::string &img_path, int gpu_id);
+    std::vector<std::vector<float> > predict_numpy(py::array_t<float> img_numpy, int gpu_id);
     virtual void destroy(){delete _detector;} // release resources
   private:
     API::Detector *_detector;
+    int gpu_id = 0;
+    void set_mode(int gpu_id);
 };
 
 // python bindings, see http://pybind11.readthedocs.io/en/master/classes.html
@@ -39,21 +41,13 @@ FRCNNDetector::FRCNNDetector(std::string &proto_file, std::string &weight_file, 
   FLAGS_alsologtostderr = 1;
   // Run tool or show usage.int argc, char **argv, 
   //caffe::GlobalInit(&argc, &argv);
-  if (gpu_id >= 0) {
-#ifndef CPU_ONLY
-    caffe::Caffe::SetDevice(gpu_id);
-    caffe::Caffe::set_mode(caffe::Caffe::GPU);
-#else
-    LOG(FATAL) << "CPU ONLY MODEL, BUT PROVIDE GPU ID";
-#endif
-  } else {
-    caffe::Caffe::set_mode(caffe::Caffe::CPU);
-  }
+  set_mode(gpu_id);
 
   API::Set_Config(config_file);
   _detector = new API::Detector (proto_file, weight_file);
 }
-std::vector<std::vector<float> > FRCNNDetector::predict(std::string &img_path) {
+std::vector<std::vector<float> > FRCNNDetector::predict(std::string &img_path, int gpu_id) {
+    set_mode(gpu_id);
     std::vector<caffe::Frcnn::BBox<float> > results;
     caffe::Timer time_;
   
@@ -74,7 +68,8 @@ std::vector<std::vector<float> > FRCNNDetector::predict(std::string &img_path) {
     }
     return ret;
 }
-std::vector<std::vector<float> > FRCNNDetector::predict_numpy(py::array_t<float> img_numpy) {
+std::vector<std::vector<float> > FRCNNDetector::predict_numpy(py::array_t<float> img_numpy, int gpu_id) {
+    set_mode(gpu_id);
     std::vector<caffe::Frcnn::BBox<float> > results;
     caffe::Timer time_;
     auto buf = img_numpy.request();
@@ -99,4 +94,14 @@ std::vector<std::vector<float> > FRCNNDetector::predict_numpy(py::array_t<float>
       ret.push_back(t);
     }
     return ret;
+}
+void FRCNNDetector::set_mode(int gpu_id) {
+  if (gpu_id >= 0) {
+#ifndef CPU_ONLY
+    caffe::Caffe::SetDevice(gpu_id);
+    caffe::Caffe::set_mode(caffe::Caffe::GPU);
+#endif
+  } else {
+    caffe::Caffe::set_mode(caffe::Caffe::CPU);
+  }
 }
