@@ -191,10 +191,6 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   DLOG(ERROR) << "rpn number after nms: " <<  box_final.size();
 
   DLOG(ERROR) << "========== copy to top";
-  if (this->phase_ == TEST) {
-	split_top_rois_by_level(top,box_final,4);//split and save to top0~top3
-	return;
-  }
   //train phase has proposal target layer,so there only output 1 total blob
   top[0]->Reshape(box_final.size(), 5, 1, 1);
   Dtype *top_data = top[0]->mutable_cpu_data();
@@ -205,6 +201,10 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
     for (int j = 1; j < 5; j++) {
       top_data[i * 5 + j] = box[j - 1];
     }
+  }
+  if (this->phase_ == TEST) {
+	split_top_rois_by_level(top,1,box_final,4);//split and save to top0~top3
+	return;
   }
   /* ignore the score blob
   if (top.size() > 1) {

@@ -102,7 +102,7 @@ void FPNProposalTargetLayer<Dtype>::Forward_cpu(
     rois_data[ top[0]->offset(i,4,0,0) ] = rois[i][3];
   }
   */
-  split_top_rois_by_level(top,rois,4);//save leveled rois to top blob
+  split_top_rois_by_level(top,0,rois,4);//save leveled rois to top blob
   //int split_total = 0;
   //for(int iii=0;iii<5;iii++) split_total += top[iii]->num();
   //CHECK_EQ(split_total,batch_size);

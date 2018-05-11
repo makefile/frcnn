@@ -89,7 +89,25 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
       reinterpret_cast<float *>(img.data)[offset + 2] -= this->mean_[2]; // R
     }
   }
-  cv::resize(img, img, cv::Size(), scale_factor, scale_factor);
+  //cv::resize(img, img, cv::Size(), scale_factor, scale_factor);
+  //fyk: check decimation or zoom,use different method
+  if( scale_factor < 1 )
+    cv::resize(img, img, cv::Size(), scale_factor, scale_factor, cv::INTER_AREA);
+  else
+    cv::resize(img, img, cv::Size(), scale_factor, scale_factor);
+  if (FrcnnParam::im_size_align > 0) {
+    // pad to align im_size_align
+    int new_im_height = int(std::ceil(img.rows / float(FrcnnParam::im_size_align)) * FrcnnParam::im_size_align);
+    int new_im_width = int(std::ceil(img.cols / float(FrcnnParam::im_size_align)) * FrcnnParam::im_size_align);
+    cv::Mat padded_im = cv::Mat::zeros(cv::Size(new_im_width, new_im_height), CV_32FC3);
+    float *res_mat_data = (float *)img.data;
+    float *new_mat_data = (float *)padded_im.data;
+    for (int y = 0; y < img.rows; ++y)
+        for (int x = 0; x < img.cols; ++x)
+            for (int k = 0; k < 3; ++k)
+                new_mat_data[(y * new_im_width + x) * 3 + k] = res_mat_data[(y * img.cols + x) * 3 + k];
+    img = padded_im;
+  }
 
   std::vector<float> im_info(3);
   im_info[0] = img.rows;

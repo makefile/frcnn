@@ -51,8 +51,8 @@ template int calc_level(Point4f<float> &box, int max_level);
 template int calc_level(Point4f<double> &box, int max_level);
 
 template <typename Dtype>
-void split_top_rois_by_level(const vector<Blob<Dtype> *> &top,vector<Point4f<Dtype> > &rois, int n_level) {
-	vector<vector<Point4f<Dtype> > > level_boxes (5,vector<Point4f<Dtype> >());
+void split_top_rois_by_level(const vector<Blob<Dtype> *> &top, int roi_blob_start_idx, vector<Point4f<Dtype> > &rois, int n_level) {
+	vector<vector<Point4f<Dtype> > > level_boxes (n_level, vector<Point4f<Dtype> >());
 	//int max_idx = 0;
 	//int max_roi_num = 0;
   	for (size_t i = 0; i < rois.size(); i++) {
@@ -73,9 +73,10 @@ void split_top_rois_by_level(const vector<Blob<Dtype> *> &top,vector<Point4f<Dty
 			level_boxes[max_idx].pop_back();
 		}
 	} */
-	for (size_t level_idx = 0; level_idx < 5; level_idx++) {
-		top[level_idx]->Reshape(level_boxes[level_idx].size(), 5, 1, 1);
-		Dtype *top_data = top[level_idx]->mutable_cpu_data();
+	for (size_t level_idx = 0; level_idx < n_level; level_idx++) {
+                // top 0 may be all rois in proposal layer
+		top[roi_blob_start_idx + level_idx]->Reshape(level_boxes[level_idx].size(), 5, 1, 1);
+		Dtype *top_data = top[roi_blob_start_idx + level_idx]->mutable_cpu_data();
 		for (size_t i = 0; i < level_boxes[level_idx].size(); i++) {
 			Point4f<Dtype> &box = level_boxes[level_idx][i];
 			top_data[i * 5] = 0;// fyk: image idx
@@ -85,6 +86,6 @@ void split_top_rois_by_level(const vector<Blob<Dtype> *> &top,vector<Point4f<Dty
 		}
 	}
 }
-template void split_top_rois_by_level(const vector<Blob<float> *> &top,vector<Point4f<float> > &rois, int n_level);
-template void split_top_rois_by_level(const vector<Blob<double> *> &top,vector<Point4f<double> > &rois, int n_level);
+template void split_top_rois_by_level(const vector<Blob<float> *> &top, int roi_blob_start_idx, vector<Point4f<float> > &rois, int n_level);
+template void split_top_rois_by_level(const vector<Blob<double> *> &top, int roi_blob_start_idx, vector<Point4f<double> > &rois, int n_level);
 
