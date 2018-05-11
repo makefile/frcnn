@@ -648,8 +648,8 @@ $(PY_FRCNN_LIB): $(PY$(FRCNN_PYBIND)_SRC) $(PY$(FRCNN_PYBIND)_HXX) | $(DYNAMIC_N
 	@ echo CXX/LD -o $@ $<
 	@ mkdir -p $(DISTRIBUTE_DIR)/python
 	$(Q)$(CXX) -shared -o $@ $(PY$(FRCNN_PYBIND)_SRC) \
-            $(ANACONDA_PY_LDFLAGS) $(LINKFLAGS) $(PY_HXX_FLAGS) \
-            -Wl,-rpath,$(ORIGIN)/../../build/lib -L$(LIB_BUILD_DIR) -l$(LIBRARY_NAME)
+            $(LINKFLAGS) $(PY_HXX_FLAGS) $(ANACONDA_PY_LDFLAGS) -L$(LIB_BUILD_DIR) -l$(LIBRARY_NAME) \
+            -Wl,-rpath,$(ORIGIN)/../../build/lib
 
 allso: $(DYNAMIC_NAME) $(YAML_DYNLIB) $(MODULE_DYNAMIC_NAME)
 # fyk end
