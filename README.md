@@ -102,9 +102,18 @@ because the regression value is normalized during training and we should recover
 - First Step of This Shell : Test all voc-2007-test images and output results in a text file.
 - Second Step of This Shell : Compare the results with the ground truth file and calculate the mAP.
 
+### Config
+
+The program use config file named like `config.json` to set params. Special params need to be cared about:
+
+- `data_jitter`: data augmentation, if set <0 then no jitter,hue,saturation,exposure
+- `im_size_align`: set to stride of last conv layer of FPN to avoid Deconv shape problem, such as 64, set to 0 to disable
+- `bbox_normalize_targets`: do bbox norm in training, and do unnorm at testing(do not need convert model weight before testing)
+- `test_rpn_score_thresh`: you can set >0 to speed up NMS at testing
+
 ### Detail
 
-Scripts and prototxts for different models are listed in the `examples/FRCNN` and `models/FRCNN`
+Scripts and prototxts for different models are listed in the `examples/FRCNN`
 
 More details about the code in include and src directory:
 - `api/FRCNN` for demo and test api
@@ -130,9 +139,10 @@ More details about the code in include and src directory:
 - git push -f origin dev
 
 ## QA
+
 - CUB not found, when compile for GPU version, `frcnn_proposal_layer.cu` requires a head file `<cub/cub.cuh>`. CUB is library contained in the official Cuda Toolkit, usually can be found in ` /usr/local/cuda/include/thrust/system/cuda/detail/`. You should add this path in your `Makefile.config` (try `locate cub.cuh` to find cub on your system)
 - When Get `error: RPC failed; result=22, HTTP code = 0`, use `git config http.postBuffer 524288000`, increases git buffer to 500mb
-
+- Cannot load module layer dynamic library, the program search the modules first in enviroment variable `CAFFE_LAYER_PATH` then in predefined `DEFAULT_LAYER_PATH` in Makefile. So try to set `CAFFE_LAYER_PATH` in shell script. And this could be happen when using pycaffe.
 
 ## License and Citation
 

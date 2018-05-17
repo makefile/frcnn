@@ -1,0 +1,15 @@
+train_net: "models/FRCNN/zf_rpn/train_val.prototxt"
+
+base_lr: 0.001
+lr_policy: "step"
+gamma: 0.1
+momentum: 0.9
+stepsize: 50000
+max_iter: 70000
+display: 20
+average_loss: 1
+weight_decay: 0.0005
+
+snapshot: 10000
+snapshot_prefix: "./models/FRCNN/snapshot/zf_rpn"
+iter_size: 2
