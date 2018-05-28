@@ -440,6 +440,11 @@ message LayerParameter {
   optional ReverseParameter reverse_param = 231;
   optional LstmParameter lstm_param = 232;
 
+  // fyk for R-FCN
+  optional PSROIPoolingParameter psroi_pooling_param = 240;
+  optional BoxAnnotatorOHEMParameter box_annotator_ohem_param = 241;
+  //SmoothL1LossOHEMParameter do modify on LossParameter 
+
 }
 
 // fyk add for Caffe module layer
@@ -1278,6 +1283,9 @@ message LossParameter {
     BATCH_SIZE = 2;
     // Do not normalize the loss.
     NONE = 3;
+    // fyk: add for R-FCN SmoothL1LossOHEM
+    // Divide by pre-fixed normalizer
+    PRE_FIXED = 4;
   }
   // For historical reasons, the default normalization for
   // SigmoidCrossEntropyLoss is BATCH_SIZE and *not* VALID.
@@ -1286,6 +1294,9 @@ message LossParameter {
   // is not specified, then setting this to false will be equivalent to
   // normalization = BATCH_SIZE to be consistent with previous behavior.
   optional bool normalize = 2;
+  // fyk: add for R-FCN SmoothL1LossOHEM
+  //pre-fixed normalizer
+  optional float pre_fixed_normalizer = 4 [default = 1];
 }
 
 // Messages that store parameters used by individual layer types follow, in
@@ -2317,4 +2328,17 @@ message LstmParameter {
   optional FillerParameter bias_filler = 4; // The filler for the bias
   optional uint32 batch_size = 5 [default = 1];
 }
+// end for CTPN
+
+// for R-FCN
+message PSROIPoolingParameter {
+  required float spatial_scale = 1; 
+  required int32 output_dim = 2; // output channel number
+  required int32 group_size = 3; // number of groups to encode position-sensitive score maps
+}
+message BoxAnnotatorOHEMParameter {
+  required uint32 roi_per_img = 1; // number of rois for training
+  optional int32 ignore_label = 2 [default = -1]; // ignore_label in scoring
+}
+// end for R-FCN
 
