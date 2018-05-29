@@ -271,8 +271,8 @@ if __name__ == '__main__':
             RES_num_class[cls] += np.sum(results[index][:,0]==cls)
             inds = np.where(results[index][:,0]==cls)[0]
             all_boxes[cls][index] = results[index][inds , 1:6] # box confidence
-        if index % 2000 == 0:
-            print('Count {} / {} images').format(index,total_image)
+    #    if index % 2000 == 0:
+    #        print('Count {} / {} images').format(index,total_image)
 
     for index in range(num_class):
         print '{} has {} Ground Truth, {} Predicted Results'.format(CLASSES[index],GT_num_class[index],RES_num_class[index])
@@ -284,3 +284,11 @@ if __name__ == '__main__':
         print 'AP for {} = {}'.format(CLASSES[cls],'%.4f'%AP[cls])
 
     print 'mAP = {}'.format('%.4f'%np.mean(AP[1:]))
+    clses = ''
+    aps = ''
+    for cls in range(1,num_class):
+        clses += '{} \t'.format(CLASSES[cls])
+        aps += '{} \t'.format('%.2f'%(AP[cls]*100))
+    print clses
+    print aps
+
