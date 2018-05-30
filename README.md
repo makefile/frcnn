@@ -4,9 +4,10 @@
 - support [R-FCN](https://arxiv.org/abs/1605.06409) with OHEM
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
 - support SSD layers
-- script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory: 'examples/FRCNN/res50/gen\_merged\_model.py'
+- script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory: 'examples/FRCNN/res50/gen\_merged\_model.py'. script for merge ResNet: 'examples/FRCNN/merge\_resnet.sh'.
 - support snapshot after got -SIGTERM (kill command's default signal)
 - logger tools by VisualDL which can visualize loss scalars and feature images .etc
+- support NMS and IOU calc on GPU
 - Action recognition (Two Stream CNN)
 - CTPN layers for scene text detection, port from [tianzhi0549/CTPN](https://github.com/tianzhi0549/CTPN)
 - support CUDA 8.0, CuDNN 7.0
