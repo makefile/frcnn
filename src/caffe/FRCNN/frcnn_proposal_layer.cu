@@ -111,12 +111,12 @@ __global__ void SelectBoxAftNMS(const int nthreads, const float *in_box, int *ke
 template <typename Dtype>
 void FrcnnProposalLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype> *> &bottom,
     const vector<Blob<Dtype> *> &top) {
- if(this->phase_ == TEST) {
-    this->use_gpu_nms_in_forward_cpu = true; // set flag to be used in forward_cpu
+// if(this->phase_ == TEST) {
+//    this->use_gpu_nms_in_forward_cpu = true; // set flag to be used in forward_cpu
     Forward_cpu(bottom, top);
-    return ;
- }else{
-#if 1
+// }else{
+{
+#if 0
   DLOG(ERROR) << "========== enter proposal layer";
   const Dtype *bottom_rpn_score = bottom[0]->gpu_data();
   const Dtype *bottom_rpn_bbox = bottom[1]->gpu_data();

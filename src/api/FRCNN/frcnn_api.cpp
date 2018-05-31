@@ -1,6 +1,9 @@
 #include "api/FRCNN/frcnn_api.hpp"
+#include "caffe/FRCNN/util/frcnn_gpu_nms.hpp"
 
 namespace FRCNN_API{
+
+using namespace caffe::Frcnn;
 
 void Detector::preprocess(const cv::Mat &img_in, const int blob_idx) {
   const vector<Blob<float> *> &input_blobs = net_->input_blobs();
@@ -167,21 +170,98 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
       bbox.push_back(BBox<float>(box, score, cls));
     }
     if (0 == bbox.size()) continue;
-    sort(bbox.begin(), bbox.end());
-    vector<bool> select(bbox.size(), true);
     // Apply NMS
-    for (int i = 0; i < bbox.size(); i++)
-      if (select[i]) {
-        //if (bbox[i].confidence < FrcnnParam::test_score_thresh) break;
-        for (int j = i + 1; j < bbox.size(); j++) {
-          if (select[j]) {
-            if (get_iou(bbox[i], bbox[j]) > FrcnnParam::test_nms) {
-              select[j] = false;
+    int n_boxes = bbox.size();
+    // fyk: GPU nms
+    if (caffe::Caffe::mode() == caffe::Caffe::GPU && FrcnnParam::test_use_gpu_nms) {
+      int box_dim = 5;
+      // sort score if use naive nms
+      if (FrcnnParam::test_soft_nms == 0) {
+        sort(bbox.begin(), bbox.end());
+        box_dim = 4;
+      }
+      std::vector<float> boxes_host(n_boxes * box_dim);
+      for (int i=0; i < n_boxes; i++) {
+        for (int k=0; k < box_dim; k++)
+          boxes_host[i * box_dim + k] = bbox[i][k];
+      }
+      int keep_out[n_boxes];//keeped index of boxes_host
+      int num_out;//how many boxes are keeped
+      // call gpu nms, currently only support naive nms
+      _nms(&keep_out[0], &num_out, &boxes_host[0], n_boxes, box_dim, FrcnnParam::test_nms);
+      //if (FrcnnParam::test_soft_nms == 0) { // naive nms
+      //  _nms(&keep_out[0], &num_out, &boxes_host[0], n_boxes, box_dim, FrcnnParam::test_nms);
+      //} else {
+      //  _soft_nms(&keep_out[0], &num_out, &boxes_host[0], n_boxes, box_dim, FrcnnParam::test_nms, FrcnnParam::test_soft_nms);
+      //}
+      for (int i=0; i < num_out; i++) {
+        results.push_back(bbox[keep_out[i]]);
+      }
+    } else { // cpu
+      if (FrcnnParam::test_soft_nms == 0) { // naive nms
+        sort(bbox.begin(), bbox.end());
+        vector<bool> select(bbox.size(), true);
+        for (int i = 0; i < bbox.size(); i++)
+          if (select[i]) {
+            //if (bbox[i].confidence < FrcnnParam::test_score_thresh) break;
+            for (int j = i + 1; j < bbox.size(); j++) {
+              if (select[j]) {
+                if (get_iou(bbox[i], bbox[j]) > FrcnnParam::test_nms) {
+                  select[j] = false;
+                }
+              }
+            }
+            results.push_back(bbox[i]);
+          }
+      } else {
+        // soft-nms
+        float sigma = 0.5;
+        float score_thresh = 0.001;
+        int N = bbox.size();
+        for (int cur_box_idx = 0; cur_box_idx < N; cur_box_idx++) {
+          // find max score box
+          float maxscore = bbox[cur_box_idx][4];
+          int maxpos = cur_box_idx;
+          for (int i = cur_box_idx + 1; i < N; i++) {
+            if (maxscore < bbox[i][4]) {
+              maxscore = bbox[i][4];
+              maxpos = i;
+            }
+          }
+          //swap
+          for (int t=0; t<5;t++) {
+            float tt = bbox[cur_box_idx][t];
+            bbox[cur_box_idx][t] = bbox[maxpos][t];
+            bbox[maxpos][t] = tt;
+          }
+          for (int i = cur_box_idx + 1; i < N; i++) {
+            float iou = get_iou(bbox[i], bbox[cur_box_idx]);
+            float weight = 1;
+            if (1 == FrcnnParam::test_soft_nms) { // linear
+              if (iou > FrcnnParam::test_nms) weight = 1 - iou;
+            } else if (2 == FrcnnParam::test_soft_nms) { // gaussian
+              weight = exp(- (iou * iou) / sigma);
+            } else { // original NMS
+              if (iou > FrcnnParam::test_nms) weight = 0;
+            }
+            bbox[i][4] *= weight;
+            if (bbox[i][4] < score_thresh) {
+              // discard the box by swapping with last box
+              for (int t=0; t<5;t++) {
+                float tt = bbox[i][t];
+                bbox[i][t] = bbox[N-1][t];
+                bbox[N-1][t] = tt;
+              }
+              N -= 1;
+              i -= 1;
             }
           }
         }
-        results.push_back(bbox[i]);
-      }
+        for (int i=0; i < N; i++) {
+          results.push_back(bbox[i]);
+        }
+      } //nms type switch
+    } //cpu
   }
 
 }

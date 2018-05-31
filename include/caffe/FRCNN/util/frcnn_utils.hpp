@@ -370,6 +370,11 @@ int extract_int(string target_key, str_map& default_map);
 
 vector<float> extract_vector(string target_key, str_map& default_map);
 
+string extract_string(string target_key, string default_value, str_map& default_map);
+float extract_float(string target_key, float default_value,  str_map& default_map);
+int extract_int(string target_key, int default_value, str_map& default_map);
+vector<float> extract_vector(string target_key, vector<float> default_value, str_map& default_map);
+
 // file 
 vector<string> get_file_list (const string& path, const string& ext);
 

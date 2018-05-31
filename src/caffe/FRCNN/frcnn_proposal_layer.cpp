@@ -140,7 +140,8 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   std::vector<Dtype> scores_;
 //fyk: use gpu
 #ifdef USE_GPU_NMS
-if (this->use_gpu_nms_in_forward_cpu) {
+//if (this->use_gpu_nms_in_forward_cpu) {
+if (caffe::Caffe::mode() == caffe::Caffe::GPU && FrcnnParam::test_use_gpu_nms) {
   std::vector<float> boxes_host(n_anchors * 4);
   for (int i=0; i<n_anchors; i++) {
     const int a_i = sort_vector[i].second;
@@ -163,6 +164,7 @@ if (this->use_gpu_nms_in_forward_cpu) {
 }
 #endif
 //CPU_NMS_CODE:
+if (FrcnnParam::test_soft_nms == 0) { // naive nms
   for (int i = 0; i < n_anchors && box_final.size() < rpn_post_nms_top_n; i++) {
     if (select[i]) {
       const int cur_i = sort_vector[i].second;
@@ -177,6 +179,57 @@ if (this->use_gpu_nms_in_forward_cpu) {
       scores_.push_back(sort_vector[i].first);
     }
   }
+} else { // soft-nms
+  float sigma = 0.5;float score_thresh = 0.001;
+  int N = n_anchors;
+  for (int cur_box_idx = 0; cur_box_idx < N && box_final.size() < rpn_post_nms_top_n; cur_box_idx++) {
+    // find max score box
+    float maxscore = sort_vector[cur_box_idx].first;
+    int maxpos = cur_box_idx;
+    for (int i = cur_box_idx + 1; i < N; i++) {
+      if (maxscore < sort_vector[i].first) {
+        maxscore = sort_vector[i].first;
+        maxpos = i;
+      }
+    }
+    //swap
+    const int cur_i = sort_vector[cur_box_idx].second;
+    const int cur_m = sort_vector[maxpos].second;
+    Point4f<Dtype> tb = anchors[cur_i];
+    Dtype ts = sort_vector[cur_box_idx].first;
+    anchors[cur_i] = anchors[cur_m];
+    sort_vector[cur_box_idx].first = sort_vector[maxpos].first;
+    anchors[cur_m] = tb;
+    sort_vector[maxpos].first = ts;
+    for (int i = cur_box_idx + 1; i < N; i++) {
+      float iou = get_iou(anchors[cur_i], anchors[sort_vector[i].second]);
+      float weight = 1;
+      if (1 == FrcnnParam::test_soft_nms) { // linear
+        if (iou > FrcnnParam::test_nms) weight = 1 - iou;
+      } else if (2 == FrcnnParam::test_soft_nms) { // gaussian
+        weight = exp(- (iou * iou) / sigma);
+      } else { // original NMS
+        if (iou > FrcnnParam::test_nms) weight = 0;
+      }
+      sort_vector[i].first *= weight;
+      if (sort_vector[i].first < score_thresh) {
+        // discard the box by swapping with last box
+        int tmp_i = sort_vector[i].second;
+        int tmp_e = sort_vector[N-1].second;
+        tb = anchors[tmp_i];
+        ts = sort_vector[i].first;
+        anchors[tmp_i] = anchors[tmp_e];
+        sort_vector[i].first = sort_vector[N-1].first;
+        anchors[tmp_e] = tb;
+        sort_vector[N-1].first = ts;
+        N -= 1;
+        i -= 1;
+      }
+    }
+    box_final.push_back(anchors[cur_i]);
+    scores_.push_back(sort_vector[cur_box_idx].first);
+  }
+}
 AFTER_CPU_NMS_CODE:
   DLOG(ERROR) << "rpn number after nms: " <<  box_final.size();
 

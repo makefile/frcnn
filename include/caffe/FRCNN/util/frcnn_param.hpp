@@ -41,6 +41,9 @@ public:
   static float data_exposure;
   // align image size to avoid Deconv upsampled size not equal to original due to odd number
   static int im_size_align;
+  // soft nms
+  static int test_soft_nms;
+  static bool test_use_gpu_nms;
 
   // Train bounding-box regressors
   static bool bbox_reg;

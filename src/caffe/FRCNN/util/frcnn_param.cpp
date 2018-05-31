@@ -27,6 +27,8 @@ float FrcnnParam::data_hue;
 float FrcnnParam::data_exposure;
 
 int FrcnnParam::im_size_align;
+int FrcnnParam::test_soft_nms; 
+bool FrcnnParam::test_use_gpu_nms; 
 
 // Train bounding-box regressors
 bool FrcnnParam::bbox_reg; // Unuse
@@ -104,16 +106,18 @@ void FrcnnParam::load_param(const std::string default_config_path) {
       static_cast<bool>(extract_int("use_flipped", default_map));
   // fyk: data enhancement & augmentation
   FrcnnParam::use_retinex =
-      static_cast<bool>(extract_int("use_retinex", default_map));
+      static_cast<bool>(extract_int("use_retinex", 0, default_map));
   FrcnnParam::use_haze_free =
-      static_cast<bool>(extract_int("use_haze_free", default_map));
-  FrcnnParam::use_hist_equalize = extract_int("use_hist_equalize", default_map);
-  FrcnnParam::data_jitter = extract_float("data_jitter", default_map);
-  FrcnnParam::data_hue = extract_float("data_hue", default_map);
-  FrcnnParam::data_saturation = extract_float("data_saturation", default_map);
-  FrcnnParam::data_exposure = extract_float("data_exposure", default_map);
+      static_cast<bool>(extract_int("use_haze_free", 0, default_map));
+  FrcnnParam::use_hist_equalize = extract_int("use_hist_equalize", 0, default_map);
+  FrcnnParam::data_jitter = extract_float("data_jitter", -1, default_map);
+  FrcnnParam::data_hue = extract_float("data_hue", 0, default_map);
+  FrcnnParam::data_saturation = extract_float("data_saturation", 0, default_map);
+  FrcnnParam::data_exposure = extract_float("data_exposure", 0, default_map);
 
-  FrcnnParam::im_size_align = extract_int("im_size_align", default_map);
+  FrcnnParam::im_size_align = extract_int("im_size_align", 1, default_map);
+  FrcnnParam::test_soft_nms = extract_int("test_soft_nms", 0, default_map);
+  FrcnnParam::test_use_gpu_nms = static_cast<bool>(extract_int("test_use_gpu_nms", 0, default_map));
 
   FrcnnParam::bbox_reg =
       static_cast<bool>(extract_int("bbox_reg", default_map));
@@ -165,7 +169,7 @@ void FrcnnParam::load_param(const std::string default_config_path) {
   FrcnnParam::feat_stride = extract_int("feat_stride", default_map);
   FrcnnParam::anchors = extract_vector("anchors", default_map);
   FrcnnParam::test_score_thresh = extract_float("test_score_thresh", default_map);
-  FrcnnParam::test_rpn_score_thresh = extract_float("test_rpn_score_thresh", default_map);
+  FrcnnParam::test_rpn_score_thresh = extract_float("test_rpn_score_thresh", 0, default_map);
   FrcnnParam::n_classes = extract_int("n_classes", default_map);
   FrcnnParam::iter_test = extract_int("iter_test", default_map);
 }

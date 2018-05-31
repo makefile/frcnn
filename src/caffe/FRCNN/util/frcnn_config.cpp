@@ -75,6 +75,45 @@ std::vector<float> extract_vector(std::string target_key,
   return results;
 }
 
+std::string extract_string(std::string target_key, std::string default_value,
+    str_map& default_map) {
+  std::string target_str;
+  if (default_map.count(target_key) > 0) {
+    target_str = default_map[target_key];
+  } else {
+    target_str = default_value;
+  }
+  return target_str;
+}
+
+float extract_float(std::string target_key, float default_value,
+    str_map& default_map) {
+  std::string target_str = extract_string(target_key, "", default_map);
+  if ("" == target_str) return default_value;
+  return atof(target_str.c_str());
+}
+
+int extract_int(std::string target_key, int default_value,
+    str_map& default_map) {
+  std::string target_str = extract_string(target_key, "", default_map);
+  if ("" == target_str) return default_value;
+  return atoi(target_str.c_str());
+}
+
+std::vector<float> extract_vector(std::string target_key, std::vector<float> default_value,
+     str_map& default_map) {
+  std::string target_str = extract_string(target_key, "", default_map);
+  if ("" == target_str) return default_value;
+  std::vector<float> results;
+  std::vector<std::string> elems = split(target_str, ',');
+
+  for (std::vector<std::string>::const_iterator it = elems.begin();
+       it != elems.end(); ++it) {
+    results.push_back(atof((*it).c_str()));
+  }
+  return results;
+}
+
 } // namespace frcnn
 
 } // namespace caffe

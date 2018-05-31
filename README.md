@@ -7,7 +7,7 @@
 - script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory: 'examples/FRCNN/res50/gen\_merged\_model.py'. script for merge ResNet: 'examples/FRCNN/merge\_resnet.sh'.
 - support snapshot after got -SIGTERM (kill command's default signal)
 - logger tools by VisualDL which can visualize loss scalars and feature images .etc
-- support NMS and IOU calc on GPU
+- support NMS and IOU calc on GPU, [Soft-NMS](https://arxiv.org/abs/1704.04503) on CPU
 - Action recognition (Two Stream CNN)
 - CTPN layers for scene text detection, port from [tianzhi0549/CTPN](https://github.com/tianzhi0549/CTPN)
 - support CUDA 8.0, CuDNN 7.0
@@ -59,7 +59,7 @@ All following steps, you should do these in the `$CAFFE_ROOT` path.
 ### Disclaimer
 The official [Faster R-CNN](https://arxiv.org/abs/1506.01497) code of NIPS 2015 paper (written in MATLAB) is [available](https://github.com/ShaoqingRen/faster_rcnn) here. It is worth noticing that:
 
-- This repository contains a C++ reimplementation of the Python code([py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn)), which is built on [caffe1](https://github.com/BVLC/caffe).
+- This repository contains a C++ reimplementation of the Python code([py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn)), which is built on [caffe](https://github.com/BVLC/caffe).
 - This repository used code from [caffe-faster-rcnn](https://github.com/D-X-Y/caffe-faster-rcnn/tree/dev) `commit 8ba1d26` as base framework.
 
 ### Demo
@@ -192,5 +192,11 @@ Please cite the following papers in your publications if it helps your research:
         Title = {{R-FCN}: Object Detection via Region-based Fully Convolutional Networks},
         Journal = {arXiv preprint arXiv:1605.06409},
         Year = {2016}
+    }
+    @article{
+        Author = {Navaneeth Bodla and Bharat Singh and Rama Chellappa and Larry S. Davis},
+        Title = {Soft-NMS -- Improving Object Detection With One Line of Code},
+        Booktitle = {Proceedings of the IEEE International Conference on Computer Vision},
+        Year = {2017}
     }
 
