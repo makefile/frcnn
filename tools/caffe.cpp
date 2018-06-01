@@ -426,6 +426,21 @@ int time() {
 }
 RegisterBrewFunction(time);
 
+bool set_glog() {
+  if (const char* env_p = std::getenv("GLOG_DEST_PREFIX")) {
+    if (strcmp("", env_p) == 0) {
+      google::ShutdownGoogleLogging();
+      return false;
+    }
+    std::string now_time = boost::posix_time::to_iso_extended_string(boost::posix_time::second_clock::local_time());  
+    now_time[13] = '-';  
+    now_time[16] = '-';
+    std::string LOG_INFO_FILE = env_p;
+    LOG_INFO_FILE += ".log.INFO." + now_time;
+    google::SetLogDestination(google::GLOG_INFO, LOG_INFO_FILE.c_str());
+  }
+  return true;
+}
 int main(int argc, char** argv) {
   // Print output to stderr (while still logging).
   FLAGS_alsologtostderr = 1;
@@ -440,7 +455,7 @@ int main(int argc, char** argv) {
       "  device_query    show GPU diagnostic information\n"
       "  time            benchmark model execution time");
   // Run tool or show usage.
-  caffe::GlobalInit(&argc, &argv);
+  if (set_glog()) caffe::GlobalInit(&argc, &argv);
   if (argc == 2) {
 #ifdef WITH_PYTHON_LAYER
     try {
