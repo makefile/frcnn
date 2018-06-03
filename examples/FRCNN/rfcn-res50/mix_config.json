@@ -1,0 +1,91 @@
+{
+ "scales": "800",
+ "max_size": "1000",
+ //"scales": "768",
+ //"max_size": "1024",
+ "batch_size": "128",
+ //"batch_size": "256",
+ //"batch_size": "512",
+
+ //"fg_fraction": "0.25",
+ "fg_fraction": "0.33",
+ "fg_thresh": "0.5",
+ "bg_thresh_hi": "0.5",
+ "bg_thresh_lo": "0",// for more bg rois, and also good for R-FCN OHEM
+ //"bg_thresh_lo": "0.1", // 0.1 is simple hard example mining.
+ "use_flipped": "1",
+ "use_hist_equalize": "0",
+ "use_haze_free": "0",
+ "use_retinex": "0",
+ //if jitter < 0,then do no augment
+ "data_jitter": "-0.2",
+ "data_hue": "0.1",
+ "data_saturation": "1.5",
+ "data_exposure": "1.5",
+ //"data_saturation": "0.75",
+ //"data_exposure": "0.75",
+ // set to stride of last conv layer of FPN to avoid Deconv shape problem, set to 0 to disable
+ "im_size_align": "64",
+
+ "bbox_reg": "1",
+ "bbox_thresh": "0.5",
+ "snapshot_infix": "",
+
+ "bbox_normalize_targets": "1",
+ "bbox_inside_weights": "1.0, 1.0, 1.0, 1.0",
+ "bbox_normalize_means": "0.0, 0.0, 0.0, 0.0",
+ "bbox_normalize_stds": "0.1, 0.1, 0.2, 0.2",
+
+ "rpn_positive_overlap": "0.7",
+ "rpn_negative_overlap": "0.3",
+ "rpn_clobber_positives": "0",
+ "rpn_fg_fraction": "0.5",
+ "rpn_batchsize": "256",
+ //"rpn_nms_thresh": "0.7",//lead to more rois
+ "rpn_nms_thresh": "0.5",
+ "rpn_pre_nms_top_n": "12000",
+ //减小，来提高速度（有时候不会提高）
+ "rpn_post_nms_top_n": "2000",
+ //"rpn_post_nms_top_n": "1000",
+ "rpn_min_size": "0",
+ "rpn_bbox_inside_weights": "1.0, 1.0, 1.0, 1.0",
+ "rpn_positive_weight": "-1.0",
+ "rpn_allowed_border": "0",
+
+ // 1 for linear, 2 for gaussian, 0 for naive
+ "test_soft_nms": 1,
+ // dont use gpu for soft-nms, it is wrong
+ "test_use_gpu_nms": 0,
+
+ "test_scales": "800",
+ "test_max_size": "1000",
+ "test_nms": "0.3",
+ "test_bbox_reg": "1",
+ "test_rpn_nms_thresh": "0.7",
+ "test_rpn_pre_nms_top_n": "6000",
+ "test_rpn_post_nms_top_n": "300",
+ "test_rpn_min_size": "0",
+
+ //RSI-mix's BGR pixel means
+ //"pixel_means": "92.42144147,  98.10493485,  93.54593769",
+ "pixel_means": "102.9801, 115.9465, 122.7717",
+ "rng_seed": "3",
+ "eps": "0.00000000000001",
+ "inf": "100000000",
+
+ "feat_stride": "16",
+ "anchors": "-15, -16, 15, 16,
+   -48, -55, 48, 55,
+   -264, -126, 264, 126,
+   -136, -45, 136, 45,
+   -48, -163, 48, 163,
+   -319, -316, 319, 316,
+   -128, -265, 128, 265,
+   -98, -98, 98, 98,
+   -29, -30, 29, 30",
+ "test_score_thresh": "0.05",
+ //fyk add for speed up NMS
+ "test_rpn_score_thresh": "0",
+ "n_classes": "6",
+ "iter_test": "-1"
+}
