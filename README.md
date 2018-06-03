@@ -1,7 +1,9 @@
 **Special Features for This Caffe Repository**
 
-- Faster rcnn/R-FCN approximate joint train, test and evaluate
+- approximate joint train, test and evaluate models of Faster rcnn/R-FCN, .etc
 - support [R-FCN](https://arxiv.org/abs/1605.06409) with OHEM
+- support [Light-head R-CNN](https://arxiv.org/abs/1711.07264)
+- support [Cascade R-CNN](https://arxiv.org/abs/1712.00726)
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
 - support SSD layers
 - script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory: 'examples/FRCNN/res50/gen\_merged\_model.py'. script for merge ResNet: 'examples/FRCNN/merge\_resnet.sh'.
@@ -38,6 +40,7 @@ data augmentation:
 
 - [ ] support batch image greater than 1 (on branch batch)
 - [x] support Rotated R-CNN for rotated bounding box (on branch r-frcnn)
+- [x] support OHEM (see r-fcn & light-head r-cnn)
 
 ## Installation
 
@@ -198,5 +201,17 @@ Please cite the following papers in your publications if it helps your research:
         Title = {Soft-NMS -- Improving Object Detection With One Line of Code},
         Booktitle = {Proceedings of the IEEE International Conference on Computer Vision},
         Year = {2017}
+    }
+    @article{li2017light,
+      title={Light-Head R-CNN: In Defense of Two-Stage Object Detector},
+      author={Li, Zeming and Peng, Chao and Yu, Gang and Zhang, Xiangyu and Deng, Yangdong and Sun, Jian},
+      journal={arXiv preprint arXiv:1711.07264},
+      year={2017}
+    }
+    @inproceedings{cai18cascadercnn,
+      author = {Zhaowei Cai and Nuno Vasconcelos},
+      Title = {Cascade R-CNN: Delving into High Quality Object Detection},
+      booktitle = {CVPR},
+      Year  = {2018}
     }
 

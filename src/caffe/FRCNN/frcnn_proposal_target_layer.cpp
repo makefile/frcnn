@@ -61,6 +61,26 @@ void FrcnnProposalTargetLayer<Dtype>::Forward_cpu(
     CHECK_GT(gt_labels[i], 0) << "Ground Truth Should Be Greater Than 0";
   }
 
+  // for Cascade R-CNN, screen out high IoU boxes, to remove redundant gt boxes, for that we sample rois from previous stage with GT, if we don't remove some of those good boxes, it is easy to overfit.
+  const int stage = this->layer_param_.proposal_target_param().stage();
+  if( stage != 0) {
+    const float gt_iou_thr = this->layer_param_.proposal_target_param().gt_iou_thr();
+    std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes, FrcnnParam::test_use_gpu_nms);
+    std::vector<Dtype> max_overlaps(all_rois.size(), 0);
+    for (int i = 0; i < all_rois.size(); ++ i) {
+      for (int j = 0; j < gt_boxes.size(); ++ j) {
+        if (max_overlaps[i] <= overlaps[i][j]) {
+          max_overlaps[i] = overlaps[i][j];
+        }
+      }
+    }
+    vector<Point4f<Dtype> > valid_rois;
+    for (int i = 0; i < all_rois.size(); i++) {
+      if (max_overlaps[i] < gt_iou_thr) valid_rois.push_back(all_rois[i]);
+    }
+    all_rois = valid_rois;
+  }
+
   all_rois.insert(all_rois.end(), gt_boxes.begin(), gt_boxes.end());
 
   DLOG(ERROR) << "gt boxes size: " << gt_boxes.size();
@@ -139,8 +159,9 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
 
   CHECK_EQ(gt_label.size(), gt_boxes.size());
   // overlaps: (rois x gt_boxes)
-  std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes, this->use_gpu_nms_in_forward_cpu);
-  this->use_gpu_nms_in_forward_cpu = false; // restore
+  //std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes, this->use_gpu_nms_in_forward_cpu);
+  std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes, FrcnnParam::test_use_gpu_nms);
+  //this->use_gpu_nms_in_forward_cpu = false; // restore
   std::vector<Dtype> max_overlaps(all_rois.size(), 0);
   std::vector<int> gt_assignment(all_rois.size(), -1);
   std::vector<int> _labels(all_rois.size());
@@ -164,8 +185,9 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
   
   // Select foreground RoIs as those with >= FG_THRESH overlap
   std::vector<int> fg_inds;
+  const float fg_thr = FrcnnParam::fg_thresh + 0.1 * this->layer_param_.proposal_target_param().stage(); // 0.5, 0.6, 0.7
   for (int i = 0; i < all_rois.size(); ++i) {
-    if (max_overlaps[i] >= FrcnnParam::fg_thresh) {
+    if (max_overlaps[i] >= fg_thr) {
       fg_inds.push_back(i);
     }
   }
@@ -181,9 +203,10 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
   
   // Select background RoIs as those within [BG_THRESH_LO, BG_THRESH_HI)
   std::vector<int> bg_inds;
+  const float bg_thr_hi = FrcnnParam::bg_thresh_hi + 0.1 * this->layer_param_.proposal_target_param().stage();
   for (int i = 0; i < all_rois.size(); ++i) {
     if (max_overlaps[i] >= FrcnnParam::bg_thresh_lo 
-        && max_overlaps[i] < FrcnnParam::bg_thresh_hi) {
+        && max_overlaps[i] < bg_thr_hi) {
       bg_inds.push_back(i);
     }
   }

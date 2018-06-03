@@ -445,6 +445,10 @@ message LayerParameter {
   optional BoxAnnotatorOHEMParameter box_annotator_ohem_param = 241;
   //SmoothL1LossOHEMParameter do modify on LossParameter 
 
+  // fyk modify for Cascade R-CNN support
+  optional FrcnnProposalTargetParameter proposal_target_param = 250;
+  optional BBoxRegParameter bbox_reg_param = 251;
+
 }
 
 // fyk add for Caffe module layer
@@ -2341,4 +2345,17 @@ message BoxAnnotatorOHEMParameter {
   optional int32 ignore_label = 2 [default = -1]; // ignore_label in scoring
 }
 // end for R-FCN
+
+// modify for Cascade R-CNN
+message FrcnnProposalTargetParameter {
+  optional float gt_iou_thr = 1 [default = 0.95];
+  optional uint32 stage = 2 [default=0];
+}
+// Message that stores parameters used for bounding box regression
+message BBoxRegParameter {
+  repeated float bbox_mean = 1;
+  repeated float bbox_std = 2;
+  optional bool cls_aware = 3 [default = true];
+}
+// end for Cascade R-CNN
 

@@ -30,6 +30,7 @@ public:
   void Set_Model(std::string &proto_file, std::string &model_file);
   void predict(const cv::Mat &img_in, vector<BBox<float> > &results);
   void predict_original(const cv::Mat &img_in, vector<BBox<float> > &results);
+  void predict_cascade(const cv::Mat &img_in, vector<vector<BBox<float> > > &results);
   void predict_iterative(const cv::Mat &img_in, vector<BBox<float> > &results);
 private:
   void preprocess(const cv::Mat &img_in, const int blob_idx);
