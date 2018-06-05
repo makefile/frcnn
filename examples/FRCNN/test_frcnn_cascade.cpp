@@ -72,7 +72,7 @@ int main(int argc, char** argv){
   const std::string image_root = FLAGS_image_root.c_str();
   const std::string out_file = FLAGS_out_file.c_str();
   // out_file is filenames split by space
-  std::vector<string> out_files;
+  std::vector<std::string> out_files;
   std::istringstream f(out_file.c_str());
   std::string s;
   while (getline(f, s, ';')) {

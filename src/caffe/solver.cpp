@@ -187,6 +187,7 @@ void Solver<Dtype>::Step(int iters) {
   losses_.clear();
   smoothed_loss_ = 0;
   iteration_timer_.Start();
+  float total_secs = 0;
 
   while (iter_ < stop_iter) {
     // zero-init the params
@@ -218,7 +219,9 @@ void Solver<Dtype>::Step(int iters) {
     if (display) {
       float lapse = iteration_timer_.Seconds();
       float per_s = (iter_ - iterations_last_) / (lapse ? lapse : 1);
-      float remaining_time = lapse / param_.display() * (param_.max_iter() - iter_);
+      total_secs += lapse; // total elapsed seconds, we can also use smoothed history elapse time
+      //float remaining_time = lapse / param_.display() * (param_.max_iter() - iter_);
+      float remaining_time = total_secs / (iter_ - start_iter) * (stop_iter - iter_);
       int remaining_hour = floor(remaining_time / 3600);
       int remaining_min = round(remaining_time / 60 - remaining_hour * 60);
       std::ostringstream text_time;
