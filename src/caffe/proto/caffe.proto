@@ -433,6 +433,7 @@ message LayerParameter {
   optional DetectionOutputParameter detection_output_param = 219;
 
   // fyk add for Deformable Conv
+  optional DeformablePSROIPoolingParameter deformable_psroi_pooling_param = 228;
   optional DeformableConvolutionParameter deformable_convolution_param = 229;
 
   // fyk for CTPN text detection
@@ -444,6 +445,7 @@ message LayerParameter {
   optional PSROIPoolingParameter psroi_pooling_param = 240;
   optional BoxAnnotatorOHEMParameter box_annotator_ohem_param = 241;
   //SmoothL1LossOHEMParameter do modify on LossParameter 
+  optional PSROIAlignParameter psroi_align_param = 242;
 
   // fyk modify for Cascade R-CNN support
   optional FrcnnProposalTargetParameter proposal_target_param = 250;
@@ -2313,6 +2315,17 @@ message DeformableConvolutionParameter {
   optional bool force_nd_im2col = 17 [default = false];
 }
 
+message DeformablePSROIPoolingParameter {
+  required float spatial_scale = 1; 
+  required int32 output_dim = 2; // output channel number
+  required int32 group_size = 3; // number of groups to encode position-sensitive score maps
+  optional int32 pooled_size = 4; // fix pooled size
+  optional int32 part_size = 5 [default = 0]; // fix part size
+  optional int32 sample_per_part = 6 [default = 1];//fix samples per part
+  optional float trans_std = 7[default = 0.0]; //fix transition std
+  optional bool no_trans = 8 [default = false];//whether to disable trans parameter 
+}
+
 // for CTPN text detection
 message TransposeParameter {
   // For example, if you want to transpose NxCxHxW into WxNxHxC,
@@ -2339,6 +2352,12 @@ message PSROIPoolingParameter {
   required float spatial_scale = 1; 
   required int32 output_dim = 2; // output channel number
   required int32 group_size = 3; // number of groups to encode position-sensitive score maps
+}
+message PSROIAlignParameter {
+  required float spatial_scale = 1; 
+  required int32 output_dim = 2; // output channel number
+  required int32 group_size = 3; // number of groups to encode position-sensitive score maps
+  optional int32 sample_num = 4 [default = 2]; // 
 }
 message BoxAnnotatorOHEMParameter {
   required uint32 roi_per_img = 1; // number of rois for training
