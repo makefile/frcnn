@@ -96,7 +96,8 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
  //from C2 to C5 (C6 is not used in Fast R-CNN for that almost none of rois is large to be assigned to)
  //const int _feat_strides[] = {4, 8, 16, 32, 64};//use it as base anchor size
  //const int inverse_anchor_sizes = {32, 64, 128, 256, 512};//not used
- const int scales[] = {8, 16};
+ //const int scales[] = {8, 16}; // for VOC
+ const int scales[] = {8}; // for COOC
  const int n_scales = sizeof(scales) / sizeof(int);
  vector<int> anchor_scales(scales, scales + n_scales);
  float arr[] = {0.5, 1, 2};

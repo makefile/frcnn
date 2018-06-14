@@ -54,7 +54,8 @@ void FPNAnchorTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bottom
   //from C2 to C6
   //const int _feat_strides[] = {4, 8, 16, 32, 64};//use it as base anchor size
   //const int anchor_sizes = {32, 64, 128, 256, 512};//not used
-  const int scales[] = {8, 16};
+  //const int scales[] = {8, 16}; // for VOC
+  const int scales[] = {8}; // for COCO
   const int n_scales = sizeof(scales) / sizeof(int);
   this->anchor_scales = vector<int>(scales, scales + n_scales);
   float arr[] = {0.5, 1, 2};
