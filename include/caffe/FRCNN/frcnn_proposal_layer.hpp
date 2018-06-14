@@ -29,8 +29,11 @@ template <typename Dtype>
 class FrcnnProposalLayer : public Layer<Dtype> {
  public:
   explicit FrcnnProposalLayer(const LayerParameter& param)
-      //: Layer<Dtype>(param) {} //fyk: fix problem of runtest
+#ifndef CPU_ONLY //fyk: fix problem of runtest
       : Layer<Dtype>(param), anchors_(nullptr), transform_bbox_(nullptr), mask_(nullptr), selected_flags_(nullptr), gpu_keep_indices_(nullptr) {}
+#else
+      : Layer<Dtype>(param) {}
+#endif
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,

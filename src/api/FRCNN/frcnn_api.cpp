@@ -171,9 +171,10 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
     }
     if (0 == bbox.size()) continue;
     // Apply NMS
-    int n_boxes = bbox.size();
     // fyk: GPU nms
+#ifndef CPU_ONLY
     if (caffe::Caffe::mode() == caffe::Caffe::GPU && FrcnnParam::test_use_gpu_nms) {
+      int n_boxes = bbox.size();
       int box_dim = 5;
       // sort score if use naive nms
       if (FrcnnParam::test_soft_nms == 0) {
@@ -198,6 +199,7 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
         results.push_back(bbox[keep_out[i]]);
       }
     } else { // cpu
+#endif
       if (FrcnnParam::test_soft_nms == 0) { // naive nms
         sort(bbox.begin(), bbox.end());
         vector<bool> select(bbox.size(), true);
@@ -261,7 +263,9 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
           results.push_back(bbox[i]);
         }
       } //nms type switch
+#ifndef CPU_ONLY
     } //cpu
+#endif
   }
 
 }

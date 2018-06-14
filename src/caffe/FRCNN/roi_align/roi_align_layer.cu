@@ -10,6 +10,17 @@ using std::min;
 
 namespace caffe {
 
+	inline __device__ double cubic_coeff_gpu(double x) {
+		x = (x>0) ? x : -x;
+		if (x<1){
+			return 1 - 2 * x*x + x*x*x;
+		}
+		else if (x<2){
+			return 4 - 8 * x + 5 * x*x - x*x*x;
+		}
+		return 0;
+	}
+
 	template <typename Dtype>
 	__global__ void ROIAlignForward(const int nthreads, const Dtype* bottom_data,
 		const Dtype spatial_scale, const int channels, const int height,

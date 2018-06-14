@@ -139,7 +139,7 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   std::vector<Point4f<Dtype> > box_final;
   std::vector<Dtype> scores_;
 //fyk: use gpu
-#ifdef USE_GPU_NMS
+#if defined (USE_GPU_NMS) && ! defined (CPU_ONLY)
 //if (this->use_gpu_nms_in_forward_cpu) {
 if (caffe::Caffe::mode() == caffe::Caffe::GPU && FrcnnParam::test_use_gpu_nms) {
   std::vector<float> boxes_host(n_anchors * 4);
@@ -160,8 +160,8 @@ if (caffe::Caffe::mode() == caffe::Caffe::GPU && FrcnnParam::test_use_gpu_nms) {
     scores_.push_back(sort_vector[keep_out[i]].first);
   }
   this->use_gpu_nms_in_forward_cpu = false;
-  goto AFTER_CPU_NMS_CODE;
-}
+  //goto AFTER_CPU_NMS_CODE;
+} else {
 #endif
 //CPU_NMS_CODE:
 if (FrcnnParam::test_soft_nms == 0) { // naive nms
@@ -230,7 +230,10 @@ if (FrcnnParam::test_soft_nms == 0) { // naive nms
     scores_.push_back(sort_vector[cur_box_idx].first);
   }
 }
-AFTER_CPU_NMS_CODE:
+#if defined (USE_GPU_NMS) && ! defined (CPU_ONLY)
+}
+//AFTER_CPU_NMS_CODE:
+#endif
   DLOG(ERROR) << "rpn number after nms: " <<  box_final.size();
 
   DLOG(ERROR) << "========== copy to top";

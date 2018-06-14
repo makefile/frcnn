@@ -5,12 +5,12 @@
 # USE_CUDNN := 1
 
 # CPU-only switch (uncomment to build without GPU support).
-# CPU_ONLY := 1
+ CPU_ONLY := 1
 
 # uncomment to disable IO dependencies and corresponding data layers
 # USE_OPENCV := 0
-# USE_LEVELDB := 0
-# USE_LMDB := 0
+ USE_LEVELDB := 0
+ USE_LMDB := 0
 
 # uncomment to allow MDB_NOLOCK when reading LMDB files (only if necessary)
 #	You should not set this flag if you will be reading LMDBs with any

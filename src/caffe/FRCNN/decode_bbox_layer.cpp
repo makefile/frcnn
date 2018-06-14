@@ -140,10 +140,6 @@ void DecodeBBoxLayer<Dtype>::Forward_cpu(
 
 }
 
-#ifdef CPU_ONLY
-STUB_GPU(DecodeBBoxLayer);
-#endif
-
 INSTANTIATE_CLASS(DecodeBBoxLayer);
 REGISTER_LAYER_CLASS(DecodeBBox);
 
