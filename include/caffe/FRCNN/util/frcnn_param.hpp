@@ -39,8 +39,13 @@ public:
   static float data_hue;
   static float data_saturation;
   static float data_exposure;
+  // for FPN
   // align image size to avoid Deconv upsampled size not equal to original due to odd number
   static int im_size_align;
+  // Hyperparameters for the RoI-to-FPN level mapping heuristic
+  // assign roi to level (4 + log(side_size)/224)
+  static int roi_canonical_scale;// default: 224
+  static int roi_canonical_level;// default: 4
   // soft nms
   static int test_soft_nms;
   static bool test_use_gpu_nms;

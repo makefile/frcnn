@@ -43,6 +43,25 @@ void FPNProposalLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bottom,
   for (std::size_t i=0;i<params["feat_strides"].size();i++) {
     _feat_strides.push_back(params["feat_strides"][i].as<int>());
   }
+  if (params["anchor_scales"]) {
+    for (std::size_t i=0;i<params["anchor_scales"].size();i++) {
+      _anchor_scales.push_back(params["anchor_scales"][i].as<int>());
+    }
+  } else {
+    _anchor_scales.push_back(8);
+    _anchor_scales.push_back(16);
+    //_anchor_scales.push_back(32);//maybe too much
+  }
+  if (params["anchor_ratios"]) {
+    for (std::size_t i=0;i<params["anchor_ratios"].size();i++) {
+      _anchor_ratios.push_back(params["anchor_ratios"][i].as<float>());
+    }
+  } else {
+    _anchor_ratios.push_back(0.5);
+    _anchor_ratios.push_back(1);
+    _anchor_ratios.push_back(2);
+  }
+
   top[0]->Reshape(1, 5, 1, 1);
   /*
   if (top.size() > 1) {//fyk discard the score top
@@ -87,7 +106,6 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   const Dtype bounds[4] = { im_width - 1, im_height - 1, im_width - 1, im_height -1 };
   const Dtype min_size = bottom_im_info[2] * rpn_min_size;
   //const int config_n_anchors = FrcnnParam::anchors.size() / 4;
-  const int config_n_anchors = 3;//only set one scale anchors in each pyramid feature
   LOG_IF(ERROR, rpn_pre_nms_top_n <= 0 ) << "rpn_pre_nms_top_n : " << rpn_pre_nms_top_n;
   LOG_IF(ERROR, rpn_post_nms_top_n <= 0 ) << "rpn_post_nms_top_n : " << rpn_post_nms_top_n;
   if (rpn_pre_nms_top_n <= 0 || rpn_post_nms_top_n <= 0 ) return;
@@ -97,11 +115,12 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
  //const int _feat_strides[] = {4, 8, 16, 32, 64};//use it as base anchor size
  //const int inverse_anchor_sizes = {32, 64, 128, 256, 512};//not used
  //const int scales[] = {8, 16}; // for VOC
- const int scales[] = {8}; // for COOC
- const int n_scales = sizeof(scales) / sizeof(int);
- vector<int> anchor_scales(scales, scales + n_scales);
- float arr[] = {0.5, 1, 2};
- vector<float> anchor_ratios (arr, arr+3);
+ //const int scales[] = {8}; // for COCO, only set one scale anchors in each pyramid feature
+ //const int n_scales = sizeof(scales) / sizeof(int);
+ //vector<int> anchor_scales(scales, scales + n_scales);
+ //float arr[] = {0.5, 1, 2};
+ //vector<float> anchor_ratios (arr, arr+3);
+  const int config_n_anchors = _anchor_ratios.size() * _anchor_scales.size();
 
   std::vector<Point4f<Dtype> > anchors;
   typedef pair<Dtype, int> sort_pair;
@@ -121,7 +140,7 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   CHECK(channes % 4 == 0) << "rpn bbox pred channels should be divided by 4";
 
   DLOG(ERROR) << "========== generate anchors";
-  vector<vector<int> > param_anchors = generate_anchors(_feat_strides[fp_i], anchor_ratios, anchor_scales);
+  vector<vector<int> > param_anchors = generate_anchors(_feat_strides[fp_i], _anchor_ratios, _anchor_scales);
   
   for (int j = 0; j < height; j++) {
     for (int i = 0; i < width; i++) {
@@ -135,9 +154,9 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
            // FrcnnParam::anchors[k * 4 + 1] + j * FrcnnParam::feat_stride,  // shift_y[i][j];
            // FrcnnParam::anchors[k * 4 + 2] + i * FrcnnParam::feat_stride,  // shift_x[i][j];
            // FrcnnParam::anchors[k * 4 + 3] + j * FrcnnParam::feat_stride); // shift_y[i][j];
-           param_anchors[k][0] + j * _feat_strides[fp_i],
+           param_anchors[k][0] + i * _feat_strides[fp_i],
            param_anchors[k][1] + j * _feat_strides[fp_i],
-           param_anchors[k][2] + j * _feat_strides[fp_i],
+           param_anchors[k][2] + i * _feat_strides[fp_i],
            param_anchors[k][3] + j * _feat_strides[fp_i]);
 
         Point4f<Dtype> box_delta(

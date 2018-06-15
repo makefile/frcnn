@@ -84,6 +84,8 @@ class FPNProposalLayer : public Layer<Dtype> {
   int *gpu_keep_indices_;
 #endif
   std::vector<int> _feat_strides;
+  std::vector<int> _anchor_scales;
+  std::vector<float> _anchor_ratios;
 };
 
 }  // namespace frcnn

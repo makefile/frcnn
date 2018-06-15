@@ -7,6 +7,8 @@
 #include <cmath>
 #include "caffe/blob.hpp"
 #include "caffe/FRCNN/util/frcnn_utils.hpp"
+#include "caffe/FRCNN/util/frcnn_param.hpp"
+
 using namespace std;
 using namespace caffe;
 using namespace caffe::Frcnn;
@@ -45,7 +47,8 @@ int calc_level(Point4f<Dtype> &box, int max_level) {
 	int w = box[2] - box[0];
 	int h = box[3] - box[1];
 	//224 is base size of ImageNet
-	return min(max_level, max(2, (int)(4 + log2(sqrt(w * h) / 224))));
+	//return min(max_level, max(2, (int)(4 + log2(sqrt(w * h) / 224 + 1e-6))));
+	return min(max_level, max(2, (int)(FrcnnParam::roi_canonical_level + log2(sqrt(w * h) / FrcnnParam::roi_canonical_scale + 1e-6))));
 }
 template int calc_level(Point4f<float> &box, int max_level);
 template int calc_level(Point4f<double> &box, int max_level);

@@ -35,6 +35,25 @@ void FPNAnchorTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bottom
   for (std::size_t i=0;i<params["feat_strides"].size();i++) {
       _feat_strides.push_back(params["feat_strides"][i].as<int>());
   }
+  if (params["anchor_scales"]) {
+    for (std::size_t i=0;i<params["anchor_scales"].size();i++) {
+      this->anchor_scales.push_back(params["anchor_scales"][i].as<int>());
+    }
+  } else {
+    this->anchor_scales.push_back(8);
+    this->anchor_scales.push_back(16);
+    //this->anchor_scales.push_back(32);//maybe too much
+  }
+  if (params["anchor_ratios"]) {
+    for (std::size_t i=0;i<params["anchor_ratios"].size();i++) {
+      this->anchor_ratios.push_back(params["anchor_ratios"][i].as<float>());
+    }
+  } else {
+    this->anchor_ratios.push_back(0.5);
+    this->anchor_ratios.push_back(1);
+    this->anchor_ratios.push_back(2);
+  }
+  config_n_anchors_ = this->anchor_ratios.size() * this->anchor_scales.size();// anchors num of each pixel in each pyramid feature
 
   border_ = FrcnnParam::rpn_allowed_border;
 
@@ -55,12 +74,11 @@ void FPNAnchorTargetLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype> *> &bottom
   //const int _feat_strides[] = {4, 8, 16, 32, 64};//use it as base anchor size
   //const int anchor_sizes = {32, 64, 128, 256, 512};//not used
   //const int scales[] = {8, 16}; // for VOC
-  const int scales[] = {8}; // for COCO
-  const int n_scales = sizeof(scales) / sizeof(int);
-  this->anchor_scales = vector<int>(scales, scales + n_scales);
-  float arr[] = {0.5, 1, 2};
-  anchor_ratios = vector<float> (arr, arr+3);
-  config_n_anchors_ = 3 * n_scales;// anchors num of each pixel in each pyramid feature
+  //const int scales[] = {8}; // for COCO
+  //const int n_scales = sizeof(scales) / sizeof(int);
+  //this->anchor_scales = vector<int>(scales, scales + n_scales);
+  //float arr[] = {0.5, 1, 2};
+  //anchor_ratios = vector<float> (arr, arr+3);
 
   // labels
   //top[0]->Reshape(1, 1, config_n_anchors_ * height, width);

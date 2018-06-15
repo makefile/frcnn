@@ -27,6 +27,9 @@ float FrcnnParam::data_hue;
 float FrcnnParam::data_exposure;
 
 int FrcnnParam::im_size_align;
+int FrcnnParam::roi_canonical_scale;
+int FrcnnParam::roi_canonical_level;
+
 int FrcnnParam::test_soft_nms; 
 bool FrcnnParam::test_use_gpu_nms; 
 
@@ -116,6 +119,8 @@ void FrcnnParam::load_param(const std::string default_config_path) {
   FrcnnParam::data_exposure = extract_float("data_exposure", 0, default_map);
 
   FrcnnParam::im_size_align = extract_int("im_size_align", 1, default_map);
+  FrcnnParam::roi_canonical_scale = extract_int("roi_canonical_scale", 224, default_map);
+  FrcnnParam::roi_canonical_level = extract_int("roi_canonical_level", 4, default_map);
   FrcnnParam::test_soft_nms = extract_int("test_soft_nms", 0, default_map);
   FrcnnParam::test_use_gpu_nms = static_cast<bool>(extract_int("test_use_gpu_nms", 0, default_map));
 
