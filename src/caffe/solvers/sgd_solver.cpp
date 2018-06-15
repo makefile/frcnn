@@ -26,6 +26,21 @@ namespace caffe {
 template <typename Dtype>
 Dtype SGDSolver<Dtype>::GetLearningRate() {
   Dtype rate;
+  if (this->iter_ < this->param_.warm_up_iters()) {
+    Dtype warmup_factor = 1;
+    const string& lr_method = this->param_.warm_up_method();
+    if (lr_method == "linear") {
+      Dtype alpha = Dtype(this->iter_) / Dtype(this->param_.warm_up_iters());
+      warmup_factor = this->param_.warm_up_factor() * (1 - alpha) + alpha;
+    } else if (lr_method == "constant") {
+      warmup_factor = this->param_.warm_up_factor();
+    } else if (lr_method == "exp") {
+      Dtype alpha = Dtype(this->iter_) / Dtype(this->param_.warm_up_iters());
+      warmup_factor = pow(alpha, this->param_.warm_up_power());
+    }
+    rate = this->param_.base_lr() * warmup_factor;
+    return rate;
+  }
   const string& lr_policy = this->param_.lr_policy();
   if (lr_policy == "fixed") {
     rate = this->param_.base_lr();

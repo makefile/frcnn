@@ -241,6 +241,15 @@ message SolverParameter {
 
   // Overlap compute and communication for data parallel training
   optional bool layer_wise_reduce = 41 [default = true];
+
+  // fyk add for warm up early steps
+  optional int32 warm_up_iters = 42 [default = 500];
+  // Start the warm up from SOLVER.BASE_LR * SOLVER.WARM_UP_FACTOR
+  optional float warm_up_factor = 43 [default = 0.33];
+  // WARM_UP_METHOD can be either 'constant', 'exp' or 'linear' (i.e., gradual)
+  optional string warm_up_method = 44 [default = "linear"];
+  // for 'exp' method
+  optional int32 warm_up_power = 45 [default = 4];
 }
 
 // A message that stores the solver snapshots

@@ -6,10 +6,12 @@
 - support [Cascade R-CNN](https://arxiv.org/abs/1712.00726)
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
 - support SSD layers
+- support [Deformable Conv](https://arxiv.org/abs/1703.06211) and Deformable PSROIPooling
 - script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory: 'examples/FRCNN/res50/gen\_merged\_model.py'. script for merge ResNet: 'examples/FRCNN/merge\_resnet.sh'.
 - support snapshot after got -SIGTERM (kill command's default signal)
 - logger tools by VisualDL which can visualize loss scalars and feature images .etc
 - support NMS and IOU calc on GPU, [Soft-NMS](https://arxiv.org/abs/1704.04503) on CPU
+- support solver learning rate warm-up strategy(see sgd\_solver.cpp)
 - Action recognition (Two Stream CNN)
 - CTPN layers for scene text detection, port from [tianzhi0549/CTPN](https://github.com/tianzhi0549/CTPN)
 - support CUDA 8.0, CuDNN 7.0
@@ -21,7 +23,7 @@
 - Swish Activation function in [Searching for Activation Functions](https://arxiv.org/abs/1710.05941)
 - Eltwise layer using in-place sum to reduce memory, from [this PR](https://github.com/BVLC/caffe/pull/3708)
 - caffe layer module, layer definition and usage like `Python layer`,from caffe [PR#5294](https://github.com/BVLC/caffe/pull/5294)
-- CuDNNDeconv layer, Depth-wise Conv layer
+- CuDNNDeconv layer, Depth-wise Conv layer, Upsample layer
 - CTPN layers include LSTM layer implemented by [@junhyukoh](https://github.com/junhyukoh/caffe-lstm),which is faster than upstream master branch of Caffe.
 
 **Data Preprocess**
@@ -40,7 +42,7 @@ data augmentation:
 
 - [ ] support batch image greater than 1 (on branch batch)
 - [x] support Rotated R-CNN for rotated bounding box (on branch r-frcnn)
-- [x] support OHEM (see r-fcn & light-head r-cnn)
+- [x] support OHEM (see r-fcn)
 
 ## Installation
 
@@ -195,6 +197,12 @@ Please cite the following papers in your publications if it helps your research:
         Title = {{R-FCN}: Object Detection via Region-based Fully Convolutional Networks},
         Journal = {arXiv preprint arXiv:1605.06409},
         Year = {2016}
+    }
+    @article{dai17dcn,
+        Author = {Jifeng Dai, Haozhi Qi, Yuwen Xiong, Yi Li, Guodong Zhang, Han Hu, Yichen Wei},
+        Title = {Deformable Convolutional Networks},
+        Journal = {arXiv preprint arXiv:1703.06211},
+        Year = {2017}
     }
     @article{
         Author = {Navaneeth Bodla and Bharat Singh and Rama Chellappa and Larry S. Davis},
