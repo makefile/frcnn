@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #ifndef _WIN32
 #  include "dlfcn.h"
@@ -22,7 +23,9 @@ namespace caffe {
 namespace {
 #ifndef _WIN32
   void * OpenLibrary(std::string const & name) {
-    return ::dlopen(name.c_str(), CAFFE_DLOPEN_FLAGS);
+    void* dlh = ::dlopen(name.c_str(), CAFFE_DLOPEN_FLAGS);
+    if (!dlh) std::cerr << dlerror() << std::endl;
+    return dlh;
   }
 
   bool CloseLibrary(void * handle) {
