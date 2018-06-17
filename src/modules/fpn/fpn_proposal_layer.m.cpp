@@ -211,6 +211,31 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
   DLOG(ERROR) << "rpn number after nms: " <<  box_final.size();
 
   DLOG(ERROR) << "========== copy to top";
+  int n_level = 0; // fpn_levels
+  if (this->phase_ == TEST) {
+    n_level = 4;
+    vector<vector<Point4f<Dtype> > > level_rois (n_level);
+    vector<vector<Dtype> > level_scores (n_level, vector<Dtype>());
+    for (size_t i = 0; i < box_final.size(); i++) {
+      int level_idx = calc_level(box_final[i], n_level + 1) - 2;
+      level_rois[level_idx].push_back(box_final[i]);
+      level_scores[level_idx].push_back(scores_[i]);
+    }
+    // top_data[0] also need change
+    box_final.clear();
+    scores_.clear();
+    for (size_t j = 0; j < n_level; j++) {
+      if (level_rois[j].size() == 0) {
+        level_rois[j].push_back(Point4f<Dtype>());
+        box_final.push_back(Point4f<Dtype>());
+        scores_.push_back(0);
+      } else {
+        box_final.insert(box_final.end(), level_rois[j].begin(), level_rois[j].end());
+        scores_.insert(scores_.end(), level_scores[j].begin(), level_scores[j].end());
+      }
+    }
+    split_top_rois_by_level(top,1,level_rois);
+  }
   //train phase has proposal target layer,so there only output 1 total blob
   top[0]->Reshape(box_final.size(), 5, 1, 1);
   Dtype *top_data = top[0]->mutable_cpu_data();
@@ -222,17 +247,13 @@ void FPNProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
       top_data[i * 5 + j] = box[j - 1];
     }
   }
-  if (this->phase_ == TEST) {
-	split_top_rois_by_level(top,1,box_final,4);//split and save to top0~top3
-	return;
-  }
-  /* ignore the score blob
-  if (top.size() > 1) {
-    top[1]->Reshape(box_final.size(), 1, 1, 1);
+  // optional score output
+  if (top.size() > 1 + n_level) {
+    top[1 + n_level]->Reshape(box_final.size(), 1, 1, 1);
     for (size_t i = 0; i < box_final.size(); i++) {
-      top[1]->mutable_cpu_data()[i] = scores_[i];
+      top[1 + n_level]->mutable_cpu_data()[i] = scores_[i];
     }
-  } */
+  }
 
   DLOG(ERROR) << "========== exit proposal layer";
 }

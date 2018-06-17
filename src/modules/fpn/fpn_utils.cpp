@@ -44,8 +44,8 @@ vector<vector<int> > generate_anchors(int base_size, const vector<float> &ratios
 template <typename Dtype>
 int calc_level(Point4f<Dtype> &box, int max_level) {
 	// assign rois to level Pk    (P2 ~ P_max_level)
-	int w = box[2] - box[0];
-	int h = box[3] - box[1];
+	Dtype w = box[2] - box[0];
+	Dtype h = box[3] - box[1];
 	//224 is base size of ImageNet
 	//return min(max_level, max(2, (int)(4 + log2(sqrt(w * h) / 224 + 1e-6))));
 	return min(max_level, max(2, (int)(FrcnnParam::roi_canonical_level + log2(sqrt(w * h) / FrcnnParam::roi_canonical_scale + 1e-6))));
@@ -54,34 +54,16 @@ template int calc_level(Point4f<float> &box, int max_level);
 template int calc_level(Point4f<double> &box, int max_level);
 
 template <typename Dtype>
-void split_top_rois_by_level(const vector<Blob<Dtype> *> &top, int roi_blob_start_idx, vector<Point4f<Dtype> > &rois, int n_level) {
-	vector<vector<Point4f<Dtype> > > level_boxes (n_level, vector<Point4f<Dtype> >());
-	//int max_idx = 0;
-	//int max_roi_num = 0;
-  	for (size_t i = 0; i < rois.size(); i++) {
-		int level_idx = calc_level(rois[i], n_level + 1) - 2;
-		level_boxes[level_idx].push_back(rois[i]);
-		//if(level_boxes[level_idx].size() > max_roi_num){
-		//	max_roi_num = level_boxes[level_idx].size();
-		//	max_idx = level_idx;
-		//}
-	}
-	//random move 1 roi to empty level_boxes for that blob with num=0 will cause CUDA check error.
-	//this method is a little dirty,and if the rois num is less than pyramid levels num,then it is not enough to divide.
-	//so I modify CAFFE_GET_BLOCKS in include/caffe/util/device_alternate.hpp instead to support blob count=0.
-	/*for (size_t level_idx = 0; level_idx < 5; level_idx++) {
-		int num = level_boxes[level_idx].size();
-		if(0==num){
-			level_boxes[level_idx].push_back(level_boxes[max_idx].back());
-			level_boxes[max_idx].pop_back();
-		}
-	} */
+void split_top_rois_by_level(const vector<Blob<Dtype> *> &top, int roi_blob_start_idx, vector<vector<Point4f<Dtype> > > &level_rois) {
+	//so I modify CAFFE_GET_BLOCKS in include/caffe/util/device_alternate.hpp instead to support blob count=0. !! I am not sure whether this method will cause problem. so, better to add one roi, whether 0 dummy roi or random one
+        int n_level = level_rois.size();
 	for (size_t level_idx = 0; level_idx < n_level; level_idx++) {
+                CHECK(level_rois[level_idx].size() > 0);
                 // top 0 may be all rois in proposal layer
-		top[roi_blob_start_idx + level_idx]->Reshape(level_boxes[level_idx].size(), 5, 1, 1);
+		top[roi_blob_start_idx + level_idx]->Reshape(level_rois[level_idx].size(), 5, 1, 1);
 		Dtype *top_data = top[roi_blob_start_idx + level_idx]->mutable_cpu_data();
-		for (size_t i = 0; i < level_boxes[level_idx].size(); i++) {
-			Point4f<Dtype> &box = level_boxes[level_idx][i];
+		for (size_t i = 0; i < level_rois[level_idx].size(); i++) {
+			Point4f<Dtype> &box = level_rois[level_idx][i];
 			top_data[i * 5] = 0;// fyk: image idx
 			for (int j = 1; j < 5; j++) {
 			  top_data[i * 5 + j] = box[j - 1];
@@ -89,6 +71,6 @@ void split_top_rois_by_level(const vector<Blob<Dtype> *> &top, int roi_blob_star
 		}
 	}
 }
-template void split_top_rois_by_level(const vector<Blob<float> *> &top, int roi_blob_start_idx, vector<Point4f<float> > &rois, int n_level);
-template void split_top_rois_by_level(const vector<Blob<double> *> &top, int roi_blob_start_idx, vector<Point4f<double> > &rois, int n_level);
+template void split_top_rois_by_level(const vector<Blob<float> *> &top, int roi_blob_start_idx, vector<vector<Point4f<float> > > &level_rois);
+template void split_top_rois_by_level(const vector<Blob<double> *> &top, int roi_blob_start_idx, vector<vector<Point4f<double> > > &level_rois);
 

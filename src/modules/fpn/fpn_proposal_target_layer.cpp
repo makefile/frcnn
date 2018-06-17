@@ -73,8 +73,12 @@ void FPNProposalTargetLayer<Dtype>::Forward_cpu(
 
   DLOG(ERROR) << "gt boxes size: " << gt_boxes.size();
   const int num_images = 1;
-  const int rois_per_image = FrcnnParam::batch_size / num_images;
-  const int fg_rois_per_image = rois_per_image * FrcnnParam::fg_fraction;
+  int rois_per_image = FrcnnParam::batch_size / num_images;
+  int fg_rois_per_image = rois_per_image * FrcnnParam::fg_fraction;
+  if (FrcnnParam::batch_size == -1) {
+    rois_per_image = all_rois.size();
+    fg_rois_per_image = rois_per_image;
+  }
 
   //Sample rois with classification labels and bounding box regression
   //targets
@@ -87,31 +91,45 @@ void FPNProposalTargetLayer<Dtype>::Forward_cpu(
   CHECK_EQ(labels.size(), rois.size());
   CHECK_EQ(labels.size(), bbox_targets.size());
   CHECK_EQ(labels.size(), bbox_inside_weights.size());
-  const int batch_size = rois.size();
-  /*
-  DLOG(ERROR) << "top[0]-> " << batch_size << " , 5, 1, 1";
-  // sampled rois
-  top[0]->Reshape(batch_size, 5, 1, 1); // rois
-  //caffe_set(top[0]->count(), Dtype(0), top[0]->mutable_cpu_data());
-  Dtype *rois_data = top[0]->mutable_cpu_data();
-  for (int i = 0; i < batch_size; i++) {
-    rois_data[ top[0]->offset(i,0,0,0) ] = 0; // fyk: image idx
-    rois_data[ top[0]->offset(i,1,0,0) ] = rois[i][0];
-    rois_data[ top[0]->offset(i,2,0,0) ] = rois[i][1];
-    rois_data[ top[0]->offset(i,3,0,0) ] = rois[i][2];
-    rois_data[ top[0]->offset(i,4,0,0) ] = rois[i][3];
+  // FPN: assign to pyramid level
+  // split rois to several level, notice that bbox_targets & bbox_inside_weights must be corresponding with rois index
+  int n_level = 4; // fpn_levels
+  vector<vector<Point4f<Dtype> > > level_rois (n_level, vector<Point4f<Dtype> >());
+  vector<vector<int> > level_labels (n_level);
+  vector<vector<vector<Point4f<Dtype> > > > level_targets(n_level), level_weights(n_level);
+  for (size_t i = 0; i < rois.size(); i++) {
+    int level_idx = calc_level(rois[i], n_level + 1) - 2;
+
+    level_rois[level_idx].push_back(rois[i]);
+    level_labels[level_idx].push_back(labels[i]);
+    level_targets[level_idx].push_back(bbox_targets[i]);
+    level_weights[level_idx].push_back(bbox_inside_weights[i]);
   }
-  */
-  split_top_rois_by_level(top,0,rois,4);//save leveled rois to top blob
-  //int split_total = 0;
-  //for(int iii=0;iii<5;iii++) split_total += top[iii]->num();
-  //CHECK_EQ(split_total,batch_size);
+  labels.clear();
+  bbox_targets.clear();
+  bbox_inside_weights.clear();
+  Point4f<Dtype> pad_roi;
+  Point4f<Dtype> zeros[config_n_classes_];
+  vector<Point4f<Dtype> > pad_zeros(zeros, zeros + config_n_classes_);
+  for (size_t j = 0; j < n_level; j++) {
+    if (level_rois[j].size() == 0) {
+      level_rois[j].push_back(pad_roi);
+      labels.push_back(-1); // set ignore_label: -1 in latter layer to ignore this roi
+      bbox_targets.push_back(pad_zeros);
+      bbox_inside_weights.push_back(pad_zeros);
+    } else {
+      labels.insert(labels.end(), level_labels[j].begin(), level_labels[j].end());
+      bbox_targets.insert(bbox_targets.end(), level_targets[j].begin(), level_targets[j].end());
+      bbox_inside_weights.insert(bbox_inside_weights.end(), level_weights[j].begin(), level_weights[j].end());
+    }
+  }
+  split_top_rois_by_level(top,0,level_rois);//save leveled rois to top blob
+  const int batch_size = labels.size();
   _forward_iter_ ++;
   if (_forward_iter_ >= 200) {
     LOG(INFO) << "FPNProposalTargetLayer => rois num: " << batch_size << " = " << top[0]->num() << " + " << top[1]->num() << " + " << top[2]->num() << " + " << top[3]->num();// << " + " << top[4]->num();
     _forward_iter_ = 0;	
   }
-  //for(int iii=0;iii<5;iii++) LOG(INFO) << "top[" << iii << "] num = " << top[iii]->num();
   int top_idx = 3;//the following top blob
   // classification labels
   top[top_idx + 1]->Reshape(batch_size, 1, 1, 1);

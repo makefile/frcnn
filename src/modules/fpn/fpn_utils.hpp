@@ -19,7 +19,7 @@ int calc_level(Point4f<Dtype> &box, int max_level) ;
 
 //put rois to different pyramid level top blob
 template <typename Dtype>
-void split_top_rois_by_level(const vector<Blob<Dtype> *> &top, int roi_blob_start_idx, std::vector<Point4f<Dtype> > &rois, int n_level) ;
+void split_top_rois_by_level(const vector<Blob<Dtype> *> &top, int roi_blob_start_idx, std::vector<std::vector<Point4f<Dtype> > > &level_rois);
 
 #endif
 

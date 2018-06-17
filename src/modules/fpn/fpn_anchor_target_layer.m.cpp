@@ -141,9 +141,8 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
 
  vector<int> inds_inside;
  vector<Point4f<Dtype> > anchors;
+ vector<int> fpn_idx;
  int feat_areas = 0; // sum of feature map areas
- int max_area = 0;
- vector<int> fpn_width(_feat_strides.size());
  vector<int> fpn_areas_accum(_feat_strides.size()); // accumulate of anchors num of leveled feature maps
 
  //for loop
@@ -152,13 +151,11 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
   CHECK(num == 1) << "only single item batches are supported";
   const int height = bottom[fp_i]->height();
   const int width = bottom[fp_i]->width();
-  fpn_width[fp_i] = width;
   int area = height * width;
-  max_area = area > max_area ? area:max_area;
   fpn_areas_accum[fp_i] = feat_areas;
   feat_areas += area;
  }
- int max_anchors = max_area * config_n_anchors_;
+
  for(int fp_i = 0; fp_i<_feat_strides.size(); fp_i++) {
   
   // Generate anchors
@@ -187,8 +184,9 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
         if (x1 >= bounds[0] && y1 >= bounds[1] && x2 < bounds[2] &&
             y2 < bounds[3]) {
           //inds_inside.push_back((h * width + w) * config_n_anchors_ + k);
-          inds_inside.push_back(fp_i * max_anchors + (h * width + w) * config_n_anchors_ + k);
+          inds_inside.push_back(fpn_areas_accum[fp_i] * config_n_anchors_ + (h * width + w) * config_n_anchors_ + k);
           anchors.push_back(Point4f<Dtype>(x1, y1, x2, y2));
+          fpn_idx.push_back(fp_i);
         }
       }
     }
@@ -408,16 +406,16 @@ void FPNAnchorTargetLayer<Dtype>::Forward_cpu(
   CHECK_EQ(bbox_inside_weights.size(), bbox_outside_weights.size());
 
   for (size_t index = 0; index < inds_inside.size(); index++) {
-    const int fp_i = inds_inside[index] / max_anchors;
-    const int ind = inds_inside[index] % max_anchors;
-    const int _anchor = ind % config_n_anchors_;
-    const int width = fpn_width[fp_i];
+    const int fp_i = fpn_idx[index];
     const int fp_block = fpn_areas_accum[fp_i];
+    const int ind = inds_inside[index] - fp_block * config_n_anchors_;
+    const int _anchor = ind % config_n_anchors_;
+    const int width = bottom[fp_i]->width();
     const int _height = (ind / config_n_anchors_) / width;
     const int _width  = (ind / config_n_anchors_) % width;
     int oft = fp_block + _height * width + _width;
     //top_labels[ top[0]->offset(0,0,_anchor*height+_height,_width) ] = labels[index];
-    top_labels[ top[0]->offset(0,0,index,0) ] = labels[index];
+    top_labels[ top[0]->offset(0,0,inds_inside[index],0) ] = labels[index];
     for (int cor = 0; cor < 4; cor++) {
       //top_bbox_targets        [ top[1]->offset(0,_anchor*4+cor,_height,_width) ] = bbox_targets[index][cor];
       //top_bbox_inside_weights [ top[2]->offset(0,_anchor*4+cor,_height,_width) ] = bbox_inside_weights[index][cor];
