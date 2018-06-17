@@ -5,8 +5,9 @@
 - support [Light-head R-CNN](https://arxiv.org/abs/1711.07264)
 - support [Cascade R-CNN](https://arxiv.org/abs/1712.00726)
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
-- support SSD layers
 - support [Deformable Conv](https://arxiv.org/abs/1703.06211) and Deformable PSROIPooling
+- support SSD layers
+- support YOLOv3 inference
 - script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory: 'examples/FRCNN/res50/gen\_merged\_model.py'. script for merge ResNet: 'examples/FRCNN/merge\_resnet.sh'.
 - support snapshot after got -SIGTERM (kill command's default signal)
 - logger tools by VisualDL which can visualize loss scalars and feature images .etc
@@ -127,6 +128,7 @@ More details about the code in include and src directory:
 - `caffe/RFCN` for R-FCN
 - `caffe/DeformConv` for Deformable Conv
 - `caffe/SSD` for SSD
+- `examples/YOLO` for YOLOv3 inference, includes converter script and demo. pay attention to the Upsample layer usage.
 - `logger` dir relates to logger tools
 - `modules` and `yaml-cpp` relate to Caffe module layers, which include FPN layers .etc
 - `python/frcnn` relates to pybind11 interface for demo

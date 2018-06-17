@@ -344,7 +344,7 @@ shared_ptr<Layer<Dtype> > GetLayerModule(const LayerParameter& param) {
 
     throw std::runtime_error("Failed to open module '" +
       filename + "' in search path:\n" +
-      search_path_error);
+      search_path_error + "Please try to set correct CAFFE_LAYER_PATH env path\n");
   }
 
   // get correct creator symbol
