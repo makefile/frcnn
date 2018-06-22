@@ -293,6 +293,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
       //std::string im_name = std::to_string(index) + ".jpg";
       //cv::imwrite(im_name, mat_aug);
       src = mat_aug;
+      rois = rois_aug;
     } else {
       rois = roi_database_[index]; // recover the original rois
     }

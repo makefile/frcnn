@@ -2,7 +2,7 @@
 
 - approximate joint train, test and evaluate models of Faster rcnn/R-FCN, .etc
 - support [R-FCN](https://arxiv.org/abs/1605.06409) with OHEM
-- support [Light-head R-CNN](https://arxiv.org/abs/1711.07264)
+- support [Light-head R-CNN](https://arxiv.org/abs/1711.07264) / [R-FCN++](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/viewPDFInterstitial/16463/16297)
 - support [Cascade R-CNN](https://arxiv.org/abs/1712.00726)
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
 - support [Deformable Conv](https://arxiv.org/abs/1703.06211) and Deformable PSROIPooling
