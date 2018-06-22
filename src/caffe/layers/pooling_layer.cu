@@ -138,7 +138,7 @@ __global__ void StoPoolForwardTest(const int nthreads,
     const int wstart = pw * stride_w;
     const int wend = min(wstart + kernel_w, width);
     // We set cumsum to be 0 to avoid divide-by-zero problems
-    Dtype cumsum = FLT_MIN;
+    Dtype cumsum = 0.;
     Dtype cumvalues = 0.;
     const Dtype* const bottom_slice =
         bottom_data + (n * channels + c) * height * width;
@@ -149,7 +149,7 @@ __global__ void StoPoolForwardTest(const int nthreads,
         cumvalues += bottom_slice[h * width + w] * bottom_slice[h * width + w];
       }
     }
-    top_data[index] = cumvalues / cumsum;
+    top_data[index] = (cumsum > 0.) ? cumvalues / cumsum : 0.;
   }
 }
 
@@ -185,6 +185,10 @@ void PoolingLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
         height_, width_, pooled_height_, pooled_width_, kernel_h_,
         kernel_w_, stride_h_, stride_w_, pad_h_, pad_w_, top_data);
     break;
+  case PoolingParameter_PoolMethod_RCM:
+    Forward_cpu(bottom, top);
+    return;
+    //break;
   case PoolingParameter_PoolMethod_STOCHASTIC:
     if (this->phase_ == TRAIN) {
       // We need to create the random index as well.
@@ -365,6 +369,10 @@ void PoolingLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
         height_, width_, pooled_height_, pooled_width_, kernel_h_,
         kernel_w_, stride_h_, stride_w_, pad_h_, pad_w_, bottom_diff);
     break;
+  case PoolingParameter_PoolMethod_RCM:
+    Backward_cpu(top, propagate_down, bottom);
+    return;
+    //break;
   case PoolingParameter_PoolMethod_STOCHASTIC:
     // NOLINT_NEXT_LINE(whitespace/operators)
     StoPoolBackward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
