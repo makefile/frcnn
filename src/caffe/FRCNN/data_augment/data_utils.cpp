@@ -616,7 +616,7 @@ void set_rand_seed(int seed)
 	else
 		srand(seed);
 }
-image data_augment(image orig, box_label *boxes, int num_boxes, int w, int h, int flip, float jitter, float hue, float saturation, float exposure) {
+image data_augment(image orig, box_label *boxes, int num_boxes, int w, int h, int flip, float jitter, float rand_scale, float hue, float saturation, float exposure) {
 
 	if (w <= 0 || h <= 0)
 	{
@@ -631,7 +631,7 @@ image data_augment(image orig, box_label *boxes, int num_boxes, int w, int h, in
 	float dh = jitter * orig.h;
 
 	float new_ar = (orig.w + rand_uniform(-dw, dw)) / (orig.h + rand_uniform(-dh, dh));
-	float scale = rand_uniform(.5, 2);// .25 maybe is too small
+	float scale = rand_uniform(1.0/rand_scale, rand_scale);// (.5, 2)
 	//float scale = rand_uniform(.8, 1.2);// .25 maybe is too small
 
 	float nw, nh;
@@ -662,7 +662,7 @@ image data_augment(image orig, box_label *boxes, int num_boxes, int w, int h, in
 }
 // return CV_32FC3 image
 cv::Mat data_augment(cv::Mat &src, std::vector<std::vector<float> > &rois,
-	int flip, float jitter, float hue, float saturation, float exposure) {
+	int flip, float jitter, float scale, float hue, float saturation, float exposure) {
 	int num_boxes = rois.size();
 	box_label *_boxes = (box_label*)calloc(num_boxes, sizeof(box_label));
 	convert_box(rois, _boxes, src.cols, src.rows);
@@ -673,7 +673,7 @@ cv::Mat data_augment(cv::Mat &src, std::vector<std::vector<float> > &rois,
         float rad = M_PI;
         if(rd > 0.5) rad = M_PI / 2;
         image rotate_img = rotate_augment(rad, orig, _boxes, boxes, num_boxes);
-	image result = data_augment(rotate_img, boxes, num_boxes, 0, 0, flip, jitter, hue, saturation, exposure);
+	image result = data_augment(rotate_img, boxes, num_boxes, 0, 0, flip, jitter, scale, hue, saturation, exposure);
 	rois = convert_box(boxes, num_boxes, result.w, result.h);
 	free(_boxes);
 	free(boxes);

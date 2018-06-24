@@ -37,6 +37,8 @@
 #include "caffe/FRCNN/util/frcnn_utils.hpp"
 #include "caffe/FRCNN/util/frcnn_param.hpp"
 
+//#define DEBUG_OUTPUT
+
 // caffe.proto > LayerParameter > FrcnnRoiDataLayer
 //   'source' field specifies the window_file
 //   'crop_size' indicates the desired warped size
@@ -195,8 +197,7 @@ template <typename Dtype>
 void FrcnnRoiDataLayer<Dtype>::CheckResetRois(vector<vector<float> > &rois, const string image_path, const float cols, const float rows, const float im_scale) {
   CHECK_GT(rois.size(),0);//if there is no rois, will cause the following layer error
   for (int i = 0; i < rois.size(); i++) {
-    bool ok = rois[i][DataPrepare::X1] > 0 && rois[i][DataPrepare::Y1] > 0 && 
-        rois[i][DataPrepare::X2] < cols && rois[i][DataPrepare::Y2] < rows;
+    bool ok = rois[i][DataPrepare::X1] >= 0 && rois[i][DataPrepare::Y1] >= 0 && rois[i][DataPrepare::X2] < cols && rois[i][DataPrepare::Y2] < rows;
     if (ok == false) {
       DLOG(INFO) << "Roi Data Check Failed : " << image_path << " [" << i << "]";
       DLOG(INFO) << " row : " << rows << ",  col : " << cols << ", im_scale : " << im_scale << " | " << rois[i][DataPrepare::X1] << ", " << rois[i][DataPrepare::Y1] << ", " << rois[i][DataPrepare::X2] << ", " << rois[i][DataPrepare::Y2];
@@ -276,7 +277,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   vector<vector<float> > rois = roi_database_[index];
   // std::cout << image_database_[index] << std::endl;    
   if (do_augment) {
-    cv::Mat mat_aug = data_augment(src, rois, do_mirror, FrcnnParam::data_jitter, FrcnnParam::data_hue, FrcnnParam::data_saturation, FrcnnParam::data_exposure);
+    cv::Mat mat_aug = data_augment(src, rois, do_mirror, FrcnnParam::data_jitter, FrcnnParam::data_rand_scale, FrcnnParam::data_hue, FrcnnParam::data_saturation, FrcnnParam::data_exposure);
     // remove predicted boxes with either height or width < threshold, same as proposal layer
     vector<vector<float> > rois_aug;
     for (int i = 0; i < rois.size(); i++) {
@@ -286,13 +287,15 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
     //std::cout << "src: " << src.rows << ' ' << src.cols << ' ' << mat_aug.rows << ' ' << mat_aug.cols << std::endl;
     // doing jitter may exclude the rois, and Faster R-CNN cannot handle the 0-roi data currently
     if (rois_aug.size() > 0) {
+      //Mat tmp=mat_aug.clone();
       //for(int i=0;i<rois_aug.size();i++){
       //    std::cout << rois_aug[i][0] << ' ' << rois_aug[i][1] << ' ' << rois_aug[i][2] << ' ' << rois_aug[i][3] << ' ' << rois_aug[i][4] << std::endl;
-      //    cvDrawDottedRect(mat_aug, cv::Point(rois[i][1], rois[i][2]), cv::Point(rois[i][3], rois[i][4]), cv::Scalar(0, 0, 200), 6, 1);
+      //    cvDrawDottedRect(tmp, cv::Point(rois_aug[i][1], rois_aug[i][2]), cv::Point(rois_aug[i][3], rois_aug[i][4]), cv::Scalar(0, 0, 200), 6, 1);
       //}
       //std::string im_name = std::to_string(index) + ".jpg";
-      //cv::imwrite(im_name, mat_aug);
-      src = mat_aug;
+      //cv::imwrite(im_name, tmp);
+      cv_img = mat_aug;// used by CheckResetRois
+      src = mat_aug.clone();
       rois = rois_aug;
     } else {
       rois = roi_database_[index]; // recover the original rois
@@ -413,7 +416,19 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
       top_label[5 * i + 1] = 0;
       DLOG(INFO) << mirror << " row : " << src.rows << ",  col : " << src.cols << ", im_scale : " << im_scale << " | " << rois[i-1][DataPrepare::Y2] << " , " << top_label[5 * i + 3];
     }
+
+#ifdef DEBUG_OUTPUT
+    if (do_augment) {
+          cvDrawDottedRect(src, cv::Point(rois[i-1][DataPrepare::X1] * im_scale, rois[i-1][DataPrepare::Y1] * im_scale), cv::Point(rois[i-1][DataPrepare::X2] * im_scale, rois[i-1][DataPrepare::Y2] * im_scale), cv::Scalar(0, 0, 200), 6, 1);
+    }
+#endif
   }
+#ifdef DEBUG_OUTPUT
+  if (do_augment) {
+      std::string im_name = std::to_string(index) + ".jpg";
+      cv::imwrite(im_name, src);
+  }
+#endif
 
   trans_time += timer.MicroSeconds();
 

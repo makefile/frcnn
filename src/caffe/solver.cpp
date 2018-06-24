@@ -231,7 +231,7 @@ void Solver<Dtype>::Step(int iters) {
           << " (" << per_s << " iter/s, " << lapse << "s/"
           << param_.display() << " iters), loss = " << smoothed_loss_ << "  " << text_time.str();
       // fyk add for logging of loss
-      if (isnan(loss)) { // C++11
+      if (isnan(smoothed_loss_)) { // C++11
         LOG(ERROR) << "======= exit cause of nan loss =======";
         exit(-1);
       }

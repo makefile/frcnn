@@ -52,8 +52,8 @@ image rotate_image(image im, float rad);
 image rotate_augment(float angle, image im_in, box_label *label_in, box_label *label_out, int num_boxes);
 void set_rand_seed(int seed);
 
-image data_augment(image orig, box_label *boxes, int num_boxes, int w, int h, int flip, float jitter, float hue, float saturation, float exposure);
-cv::Mat data_augment(cv::Mat &orig, std::vector<std::vector<float> > &boxes, int flip, float jitter, float hue, float saturation, float exposure);
+image data_augment(image orig, box_label *boxes, int num_boxes, int w, int h, int flip, float jitter, float scale, float hue, float saturation, float exposure);
+cv::Mat data_augment(cv::Mat &orig, std::vector<std::vector<float> > &boxes, int flip, float jitter, float scale, float hue, float saturation, float exposure);
 void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip);
 void convert_box(std::vector<std::vector<float> > &rois, box_label *out_boxes, float img_width, float img_height);
 std::vector<std::vector<float> > convert_box(box_label *boxes, int num_boxes, float img_width, float img_height);

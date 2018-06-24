@@ -6,92 +6,6 @@ namespace caffe {
 
 using namespace caffe::Frcnn;
 
-std::vector<float> FrcnnParam::scales;
-float FrcnnParam::max_size;
-float FrcnnParam::batch_size;
-
-float FrcnnParam::fg_fraction;
-float FrcnnParam::fg_thresh;
-// Overlap threshold for a ROI to be considered background (class = 0
-// ifoverlap in [LO, HI))
-float FrcnnParam::bg_thresh_hi;
-float FrcnnParam::bg_thresh_lo;
-bool FrcnnParam::use_flipped;
-// fyk
-int FrcnnParam::use_hist_equalize;
-bool FrcnnParam::use_haze_free;
-bool FrcnnParam::use_retinex;
-float FrcnnParam::data_jitter;
-float FrcnnParam::data_saturation;
-float FrcnnParam::data_hue;
-float FrcnnParam::data_exposure;
-
-int FrcnnParam::im_size_align;
-int FrcnnParam::roi_canonical_scale;
-int FrcnnParam::roi_canonical_level;
-
-int FrcnnParam::test_soft_nms; 
-bool FrcnnParam::test_use_gpu_nms; 
-
-// Train bounding-box regressors
-bool FrcnnParam::bbox_reg; // Unuse
-float FrcnnParam::bbox_thresh;
-std::string FrcnnParam::snapshot_infix;
-bool FrcnnParam::bbox_normalize_targets;
-float FrcnnParam::bbox_inside_weights[4];
-float FrcnnParam::bbox_normalize_means[4];
-float FrcnnParam::bbox_normalize_stds[4];
-
-// RPN to detect objects
-float FrcnnParam::rpn_positive_overlap;
-float FrcnnParam::rpn_negative_overlap;
-// If an anchor statisfied by positive and negative conditions set to negative
-bool FrcnnParam::rpn_clobber_positives;
-float FrcnnParam::rpn_fg_fraction;
-int FrcnnParam::rpn_batchsize;
-float FrcnnParam::rpn_nms_thresh;
-int FrcnnParam::rpn_pre_nms_top_n;
-int FrcnnParam::rpn_post_nms_top_n;
-// Proposal height and width both need to be greater than RPN_MIN_SIZE (at
-// orig image scale)
-float FrcnnParam::rpn_min_size;
-// Deprecated (outside weights)
-float FrcnnParam::rpn_bbox_inside_weights[4];
-// Give the positive RPN examples weight of p * 1 / {num positives}
-// and give negatives a weight of (1 - p)
-// Set to -1.0 to use uniform example weighting
-float FrcnnParam::rpn_positive_weight;
-float FrcnnParam::rpn_allowed_border;
-
-// ======================================== Test
-std::vector<float> FrcnnParam::test_scales;
-float FrcnnParam::test_max_size;
-float FrcnnParam::test_nms;
-
-bool FrcnnParam::test_bbox_reg;
-// RPN to detect objects
-float FrcnnParam::test_rpn_nms_thresh;
-int FrcnnParam::test_rpn_pre_nms_top_n;
-int FrcnnParam::test_rpn_post_nms_top_n;
-// Proposal height and width both need to be greater than RPN_MIN_SIZE (at
-// orig image scale)
-float FrcnnParam::test_rpn_min_size;
-
-// ========================================
-// Means PIXEL
-float FrcnnParam::pixel_means[3]; // BGR
-int FrcnnParam::rng_seed;
-float FrcnnParam::eps;
-float FrcnnParam::inf;
-
-// ======================================== 
-int FrcnnParam::feat_stride;
-std::vector<float> FrcnnParam::anchors;
-float FrcnnParam::test_score_thresh;
-float FrcnnParam::test_rpn_score_thresh;//fyk speed up for NMS
-int FrcnnParam::n_classes;
-int FrcnnParam::iter_test;
-
 void FrcnnParam::load_param(const std::string default_config_path) {
   std::vector<float> v_tmp;
 
@@ -114,6 +28,7 @@ void FrcnnParam::load_param(const std::string default_config_path) {
       static_cast<bool>(extract_int("use_haze_free", 0, default_map));
   FrcnnParam::use_hist_equalize = extract_int("use_hist_equalize", 0, default_map);
   FrcnnParam::data_jitter = extract_float("data_jitter", -1, default_map);
+  FrcnnParam::data_rand_scale = extract_float("data_rand_scale", 1, default_map);
   FrcnnParam::data_hue = extract_float("data_hue", 0, default_map);
   FrcnnParam::data_saturation = extract_float("data_saturation", 0, default_map);
   FrcnnParam::data_exposure = extract_float("data_exposure", 0, default_map);
