@@ -723,13 +723,13 @@ image rotate_augment(float rad, image im_in, box_label *label_in, box_label *lab
 		float cx = im_in.w / 2.;//when calc rect after rotate,cannot use relative value.
 		float cy = im_in.h / 2.;
 		cv::Point2f pts[4];
-		for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++)
 		{
-			float rx = (i < 2 ? b.left : b.right)*im_in.w;
-			float ry = (i % 3 == 0 ? b.top : b.bottom)*im_in.h;
+			float rx = (j < 2 ? b.left : b.right)*im_in.w;
+			float ry = (j % 3 == 0 ? b.top : b.bottom)*im_in.h;
 			float x = -(ry - cy) * a_sin + (rx - cx) * a_cos + cx;
 			float y = (ry - cy) * a_cos + (rx - cx) * a_sin + cy;
-			pts[i] = cv::Point2f(x / im_in.w, y / im_in.h);
+			pts[j] = cv::Point2f(x / im_in.w, y / im_in.h);
 		}
 		float min_x = std::min(pts[0].x, pts[1].x);
 		float max_x = std::max(pts[0].x, pts[1].x);

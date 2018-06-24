@@ -23,6 +23,7 @@ void vis_32f_mat(std::string winname, cv::Mat mat)
 	cv::Mat tmp_mat;
 	mat.convertTo(tmp_mat, CV_8UC3);
 	cv::imshow(winname, tmp_mat);
+	//cvWaitKey(0);
 }
 void print_rois(std::vector<std::vector<float> > rois)
 {
@@ -32,12 +33,14 @@ void print_rois(std::vector<std::vector<float> > rois)
 	}
 	std::cout << std::endl;
 }
-void test_main()
+int test_main()
+//int main()
 {
 	char *img_path = "test.jpg";
 	
 	int flip = 1;// rand() % 2;
 	float jitter = 0.2;
+        float rand_scale = 1.5;
 	float hue = .1;
 	float saturation = 1.5;// .75;
 	float exposure = 1.5;//.75;
@@ -63,12 +66,15 @@ void test_main()
 	// ratate, angle range(0,2*PI)
 //	float angle = 3* M_PI / 4;//anti-clockwise direction
 	float angle = - M_PI_2;
+angle = M_PI;
 //	float angle = M_PI;// M_PI_2;//anti-clockwise direction
 	if (angle != 0)
 	{
+std::cout << "before rotate"<<std::endl;
 		box_label *boxes_new = (box_label*)calloc(num_boxes, sizeof(box_label));
 		image rot = rotate_augment(angle, orig, boxes, boxes_new, num_boxes);
 		//	show_image(rot, "rot");
+std::cout << "after rotate"<<std::endl;
 		cv::Mat mat = image2cvmat(rot);
 		std::vector<std::vector<float> > rois_new = convert_box(boxes_new, num_boxes, rot.w, rot.h);
 		print_rois(rois_new);
@@ -80,7 +86,7 @@ void test_main()
 	}
 
 	//augment
-	Mat result = data_augment(origmat, rois, flip, jitter, hue, saturation, exposure);
+	Mat result = data_augment(origmat, rois, flip, jitter, rand_scale, hue, saturation, exposure);
 	print_rois(rois);
 	free(boxes);
 	for (int i = 0; i < rois.size(); i++)
@@ -90,4 +96,5 @@ void test_main()
 	vis_32f_mat("aug", result);
 	cvWaitKey(0);
 	free_image(orig);
+	return 0;
 }

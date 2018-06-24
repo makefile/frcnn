@@ -86,10 +86,10 @@ const int CAFFE_CUDA_NUM_THREADS = 512;
 
 // CUDA: number of blocks for threads.
 inline int CAFFE_GET_BLOCKS(const int N) {
-  //return (N + CAFFE_CUDA_NUM_THREADS - 1) / CAFFE_CUDA_NUM_THREADS;
+  return (N + CAFFE_CUDA_NUM_THREADS - 1) / CAFFE_CUDA_NUM_THREADS;
   //fyk modify to solve the problem of CUDA check error when N=0(blob data count is 0) problem
   //set min(threads) = 1 for avoiding cudaCheckError if count=0
-  return std::max(1, (N + CAFFE_CUDA_NUM_THREADS - 1) / CAFFE_CUDA_NUM_THREADS);
+  //return std::max(1, (N + CAFFE_CUDA_NUM_THREADS - 1) / CAFFE_CUDA_NUM_THREADS);
 }
 
 }  // namespace caffe

@@ -244,7 +244,8 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   CHECK(lines_id_ < lines_.size() && lines_id_ >= 0) << "select error line id : " << lines_id_;
   int index = lines_[lines_id_];
   bool do_mirror = mirror && PrefetchRand() % 2 && this->phase_ == TRAIN;
-  bool do_augment = FrcnnParam::data_jitter >= 0 && PrefetchRand() % 2 && this->phase_ == TRAIN;
+  //bool do_augment = FrcnnParam::data_jitter >= 0 && PrefetchRand() % 2 && this->phase_ == TRAIN;
+  bool do_augment = FrcnnParam::data_jitter >= 0 && this->phase_ == TRAIN;
   float max_short = scales[PrefetchRand() % scales.size()];
 
   read_time += timer.MicroSeconds();
