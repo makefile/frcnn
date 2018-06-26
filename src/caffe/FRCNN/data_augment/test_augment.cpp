@@ -18,13 +18,6 @@ std::vector<std::vector<float> > get_rois()
 	}
 	return rois;
 }
-void vis_32f_mat(std::string winname, cv::Mat mat)
-{
-	cv::Mat tmp_mat;
-	mat.convertTo(tmp_mat, CV_8UC3);
-	cv::imshow(winname, tmp_mat);
-	//cvWaitKey(0);
-}
 void print_rois(std::vector<std::vector<float> > rois)
 {
 	for (int i = 0; i < rois.size(); i++)

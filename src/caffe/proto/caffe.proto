@@ -165,6 +165,8 @@ message SolverParameter {
   //      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
   //    - sigmoid: the effective learning rate follows a sigmod decay
   //      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
+  //    - cosine: SGDR decay without restarts
+  //    - triangular/triangular2: Cyclic Learning Rate
   //
   // where base_lr, max_iter, gamma, step, stepvalue and power are defined
   // in the solver parameter protocol buffer, and iter is the current iteration.
@@ -250,6 +252,9 @@ message SolverParameter {
   optional string warm_up_method = 44 [default = "linear"];
   // for 'exp' method
   optional int32 warm_up_power = 45 [default = 4];
+  // for 'triangular/triangular2' meethod
+  optional int32 start_lr_policy = 46 [default = 0]; // steps before start use this policy
+  optional float max_lr = 47; // The maximum learning rate for CLR policies
 }
 
 // A message that stores the solver snapshots

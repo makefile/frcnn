@@ -85,3 +85,11 @@ void cvDrawDottedRect(IplImage* img, CvRect rect, CvScalar color, int lenghOfDot
 	cvDrawDottedLine(img, pt3, pt4, color, thickness, lenghOfDots, lineType, 1);
 	cvDrawDottedLine(img, pt4, pt1, color, thickness, lenghOfDots, lineType, 1);
 }
+void vis_32f_mat(std::string winname, cv::Mat mat)
+{
+        cv::Mat tmp_mat;
+        mat.convertTo(tmp_mat, CV_8UC3);
+        cv::imshow(winname, tmp_mat);
+        //cvWaitKey(0);
+}
+
