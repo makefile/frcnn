@@ -23,6 +23,7 @@ bool FrcnnParam::use_haze_free;
 bool FrcnnParam::use_retinex;
 float FrcnnParam::data_jitter;
 float FrcnnParam::data_rand_scale;
+bool FrcnnParam::data_rand_rotate;
 float FrcnnParam::data_saturation;
 float FrcnnParam::data_hue;
 float FrcnnParam::data_exposure;
@@ -116,6 +117,7 @@ void FrcnnParam::load_param(const std::string default_config_path) {
   FrcnnParam::use_hist_equalize = extract_int("use_hist_equalize", 0, default_map);
   FrcnnParam::data_jitter = extract_float("data_jitter", -1, default_map);
   FrcnnParam::data_rand_scale = extract_float("data_rand_scale", 1, default_map);
+  FrcnnParam::data_rand_rotate = static_cast<bool>(extract_int("data_rand_rotate", 0, default_map));
   FrcnnParam::data_hue = extract_float("data_hue", 0, default_map);
   FrcnnParam::data_saturation = extract_float("data_saturation", 0, default_map);
   FrcnnParam::data_exposure = extract_float("data_exposure", 0, default_map);

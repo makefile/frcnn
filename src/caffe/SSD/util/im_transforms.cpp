@@ -631,6 +631,42 @@ void AdjustSaturation(const cv::Mat& in_img, const float delta,
   }
 }
 
+void RandomExposure(const cv::Mat& in_img, cv::Mat* out_img,
+    const float exposure_prob, const float lower, const float upper) {
+  float prob;
+  caffe_rng_uniform(1, 0.f, 1.f, &prob);
+  if (prob < exposure_prob) {
+    CHECK_GE(upper, lower) << "exposure upper must be >= lower.";
+    CHECK_GE(lower, 0) << "exposure lower must be non-negative.";
+    float delta;
+    caffe_rng_uniform(1, lower, upper, &delta);
+    AdjustExposure(in_img, delta, out_img);
+  } else {
+    *out_img = in_img;
+  }
+}
+
+void AdjustExposure(const cv::Mat& in_img, const float delta,
+                      cv::Mat* out_img) {
+  if (fabs(delta - 1.f) != 1e-3) {
+    // Convert to HSV colorspae.
+    cv::cvtColor(in_img, *out_img, CV_BGR2HSV);
+
+    // Split the image to 3 channels.
+    vector<cv::Mat> channels;
+    cv::split(*out_img, channels);
+
+    // Adjust the saturation.
+    channels[2].convertTo(channels[2], -1, delta, 0);
+    cv::merge(channels, *out_img);
+
+    // Back to BGR colorspace.
+    cvtColor(*out_img, *out_img, CV_HSV2BGR);
+  } else {
+    *out_img = in_img;
+  }
+}
+
 void RandomHue(const cv::Mat& in_img, cv::Mat* out_img,
                const float hue_prob, const float hue_delta) {
   float prob;

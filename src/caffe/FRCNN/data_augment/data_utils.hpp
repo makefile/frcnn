@@ -53,9 +53,19 @@ image rotate_augment(float angle, image im_in, box_label *label_in, box_label *l
 void set_rand_seed(int seed);
 
 image data_augment(image orig, box_label *boxes, int num_boxes, int w, int h, int flip, float jitter, float scale, float hue, float saturation, float exposure);
-cv::Mat data_augment(cv::Mat &orig, std::vector<std::vector<float> > &boxes, int flip, float jitter, float scale, float hue, float saturation, float exposure);
+cv::Mat data_augment(cv::Mat &orig, std::vector<std::vector<float> > &boxes, int flip, float jitter, float scale, bool random_rotate, float hue, float saturation, float exposure);
 void correct_boxes(box_label *boxes, int n, float dx, float dy, float sx, float sy, int flip);
 void convert_box(std::vector<std::vector<float> > &rois, box_label *out_boxes, float img_width, float img_height);
 std::vector<std::vector<float> > convert_box(box_label *boxes, int num_boxes, float img_width, float img_height);
+void vis_32f_mat(std::string winname, cv::Mat mat);
+//rotate
+void rotate(cv::Mat& src, double couter_clockwise_degree, cv::Mat& dst);
+void rotate_quicker(cv::Mat& src, int clockwise_degree, cv::Mat& dst);
+std::vector<std::vector<float> > rotate_rois(cv::Mat &src, std::vector<std::vector<float> > &rois, int clockwise_degree);
+std::vector<std::vector<float> > rotate_rois(cv::Mat &src, std::vector<std::vector<float> > &rois, 
+    int clockwise_degree, cv::Mat& dst);
+//jitter: shift without scale
+std::vector<std::vector<float> > shift_image(cv::Mat &srcMat, std::vector<std::vector<float> > &rois,
+    float jitter, cv::Mat& dst);
 
 #endif

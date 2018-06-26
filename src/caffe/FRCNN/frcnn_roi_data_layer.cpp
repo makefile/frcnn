@@ -21,6 +21,7 @@
 //
 //#endif
 //fyk
+#include "caffe/SSD/util/im_transforms.hpp"
 #include "data_enhance/histgram/equalize_hist.hpp"
 #include "data_augment/data_utils.hpp"
 #include "data_enhance/haze_free/haze.h"
@@ -265,10 +266,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   }
   cv::Mat src;
   cv_img.convertTo(src, CV_32FC3);
-  // leave this to data augment,or the code is hard to orgnize
-  //if (do_mirror) {
-  //  cv::flip(src, src, 1); // Flip
-  //}
+
   CHECK(src.isContinuous()) << "Warning : cv::Mat src is not Continuous !";
   CHECK_EQ(src.depth(), CV_32F) << "Image data type must be float 32 type";
   CHECK_EQ(src.channels(), 3) << "Image data type must be 3 channels";
@@ -277,15 +275,48 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   timer.Start();
   vector<vector<float> > rois = roi_database_[index];
   // std::cout << image_database_[index] << std::endl;    
+  // horizontal flip
+  if (do_mirror) {
+    cv::flip(src, src, 1); // Flip
+    FlipRois(rois, cv_img.cols);
+  }
+  // other augmentation method
   if (do_augment) {
-    cv::Mat mat_aug = data_augment(src, rois, do_mirror, FrcnnParam::data_jitter, FrcnnParam::data_rand_scale, FrcnnParam::data_hue, FrcnnParam::data_saturation, FrcnnParam::data_exposure);
+    cv::Mat mat_aug = src.clone();
+    std::vector<std::vector<float> > aug_rois = rois;
+    // yolo style
+    //cv::Mat mat_aug = data_augment(mat_aug, aug_rois, do_mirror, FrcnnParam::data_jitter, FrcnnParam::data_rand_scale, FrcnnParam::data_rand_rotate, FrcnnParam::data_hue, FrcnnParam::data_saturation, FrcnnParam::data_exposure);
+    float prob;
+    int clockwise_degree = 0;
+    if (FrcnnParam::data_rand_rotate) {
+      caffe_rng_uniform(1, 0.f, 1.f, &prob);
+      if(prob > 0.75) clockwise_degree = 90;
+      else if(prob > 0.5) clockwise_degree = 180;
+      else if(prob > 0.25) clockwise_degree = 270;
+    }
+    if (clockwise_degree > 0) {
+      aug_rois = rotate_rois(src, rois, clockwise_degree, mat_aug);
+    }
+    if (FrcnnParam::data_jitter > 0) {
+      aug_rois = shift_image(mat_aug, aug_rois, FrcnnParam::data_jitter, mat_aug);
+    }
+    // distort
+    caffe_rng_uniform(1, 0.f, 1.f, &prob);
+    // Do random saturation & exposure distortion.
+    RandomSaturation(mat_aug, &mat_aug, prob, 1 / FrcnnParam::data_saturation, FrcnnParam::data_saturation);
+    RandomExposure(mat_aug, &mat_aug, prob, 1 / FrcnnParam::data_exposure, FrcnnParam::data_exposure);
+
+    // Do random hue distortion.
+    float hue_delta = 256 * FrcnnParam::data_hue;
+    RandomHue(mat_aug, &mat_aug, prob, hue_delta);
+    // other: RandomBrightness RandomContrast RandomOrderChannels
+
     // remove predicted boxes with either height or width < threshold, same as proposal layer
     vector<vector<float> > rois_aug;
-    for (int i = 0; i < rois.size(); i++) {
-        if ( (rois[i][DataPrepare::X2] - rois[i][DataPrepare::X1]) > FrcnnParam::rpn_min_size && (rois[i][DataPrepare::Y2] - rois[i][DataPrepare::Y1]) > FrcnnParam::rpn_min_size ) 
-            rois_aug.push_back(rois[i]);
+    for (int i = 0; i < aug_rois.size(); i++) {
+        if ( (aug_rois[i][DataPrepare::X2] - aug_rois[i][DataPrepare::X1]) > FrcnnParam::rpn_min_size && (aug_rois[i][DataPrepare::Y2] - aug_rois[i][DataPrepare::Y1]) > FrcnnParam::rpn_min_size ) 
+            rois_aug.push_back(aug_rois[i]);
     }
-    //std::cout << "src: " << src.rows << ' ' << src.cols << ' ' << mat_aug.rows << ' ' << mat_aug.cols << std::endl;
     // doing jitter may exclude the rois, and Faster R-CNN cannot handle the 0-roi data currently
     if (rois_aug.size() > 0) {
       //Mat tmp=mat_aug.clone();
@@ -296,10 +327,8 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
       //std::string im_name = std::to_string(index) + ".jpg";
       //cv::imwrite(im_name, tmp);
       cv_img = mat_aug;// used by CheckResetRois
-      src = mat_aug.clone();
+      src = mat_aug;
       rois = rois_aug;
-    } else {
-      rois = roi_database_[index]; // recover the original rois
     }
   }
   //fyk: do haze free,NOTICE that data enhancement should only be done one, current prioty is haze-free > retinex > hist_equalize
@@ -386,11 +415,6 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   top_label[2] = im_scale; // im_scale: used to filter min size
   top_label[3] = 0;
   top_label[4] = 0;
-
-  // Flip
-  //if (do_mirror) {
-  //  FlipRois(rois, cv_img.cols);
-  //}
 
   //CHECK_EQ(rois.size(), channels-1);
   for (int i = 1; i < channels; i++) {

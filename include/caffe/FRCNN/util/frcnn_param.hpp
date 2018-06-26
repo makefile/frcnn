@@ -37,6 +37,7 @@ public:
   // fyk: same as YOLO(darknet) param
   static float data_jitter;
   static float data_rand_scale;
+  static bool data_rand_rotate;
   static float data_hue;
   static float data_saturation;
   static float data_exposure;

@@ -1996,16 +1996,67 @@ layer {
 
 layer {
     bottom: "psroipooled_cls_rois"
-    top: "cls_score"
-    name: "ave_cls_score_rois"
+    top: "cls_score_h"
+    name: "ave_cls_score_rois_h_"
     type: "Pooling"
     pooling_param {
         #pool: AVE
-        pool: RCM
-        kernel_size: 7
-        stride: 7
-        engine: CAFFE
+        #pool: RCM
+        #kernel_size: 7
+        #stride: 7
+        #engine: CAFFE
+        pool: MAX
+        kernel_h: 7
+        kernel_w: 1
+        stride_h: 7
+        stride_w: 1
     }
+}
+layer {
+    bottom: "cls_score_h"
+    top: "cls_score_h"
+    name: "ave_cls_score_rois_h"
+    type: "Pooling"
+    pooling_param {
+        pool: AVE
+        kernel_h: 1
+        kernel_w: 7
+        stride_h: 1
+        stride_w: 7
+    }
+}
+layer {
+    bottom: "psroipooled_cls_rois"
+    top: "cls_score_w"
+    name: "ave_cls_score_rois_w_"
+    type: "Pooling"
+    pooling_param {
+        pool: MAX
+        kernel_h: 1
+        kernel_w: 7
+        stride_h: 1
+        stride_w: 7
+    }
+}
+layer {
+    bottom: "cls_score_w"
+    top: "cls_score_w"
+    name: "ave_cls_score_rois_w"
+    type: "Pooling"
+    pooling_param {
+        pool: AVE
+        kernel_h: 7
+        kernel_w: 1
+        stride_h: 7
+        stride_w: 1
+    }
+}
+layer {
+   name: "ave_cls_score_rois"
+   type: "Eltwise"
+   bottom: "cls_score_h"
+   bottom: "cls_score_w"
+   top: "cls_score"
 }
 
 layer {
@@ -2023,16 +2074,67 @@ layer {
 
 layer {
     bottom: "psroipooled_loc_rois"
-    top: "bbox_pred"
-    name: "ave_bbox_pred_rois"
+    top: "bbox_pred_h"
+    name: "ave_bbox_pred_rois_h_"
     type: "Pooling"
     pooling_param {
         #pool: AVE
-        pool: RCM
-        kernel_size: 7
-        stride: 7
-        engine: CAFFE
+        #pool: RCM
+        #kernel_size: 7
+        #stride: 7
+        #engine: CAFFE
+        pool: MAX
+        kernel_h: 7
+        kernel_w: 1
+        stride_h: 7
+        stride_w: 1
     }
+}
+layer {
+    bottom: "bbox_pred_h"
+    top: "bbox_pred_h"
+    name: "ave_bbox_pred_rois_h"
+    type: "Pooling"
+    pooling_param {
+        pool: AVE
+        kernel_h: 1
+        kernel_w: 7
+        stride_h: 1
+        stride_w: 7
+    }
+}
+layer {
+    bottom: "psroipooled_loc_rois"
+    top: "bbox_pred_w"
+    name: "ave_bbox_pred_rois_w_"
+    type: "Pooling"
+    pooling_param {
+        pool: MAX
+        kernel_h: 1
+        kernel_w: 7
+        stride_h: 1
+        stride_w: 7
+    }
+}
+layer {
+    bottom: "bbox_pred_w"
+    top: "bbox_pred_w"
+    name: "ave_bbox_pred_rois_w"
+    type: "Pooling"
+    pooling_param {
+        pool: AVE
+        kernel_h: 7
+        kernel_w: 1
+        stride_h: 7
+        stride_w: 1
+    }
+}
+layer {
+   name: "ave_bbox_pred_rois"
+   type: "Eltwise"
+   bottom: "bbox_pred_h"
+   bottom: "bbox_pred_w"
+   top: "bbox_pred"
 }
 
 #-----------------------output------------------------

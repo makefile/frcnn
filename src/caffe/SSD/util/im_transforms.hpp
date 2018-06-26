@@ -74,6 +74,12 @@ void RandomSaturation(const cv::Mat& in_img, cv::Mat* out_img,
 void AdjustSaturation(const cv::Mat& in_img, const float delta,
                       cv::Mat* out_img);
 
+void RandomExposure(const cv::Mat& in_img, cv::Mat* out_img,
+    const float exposure_prob, const float lower, const float upper);
+
+void AdjustExposure(const cv::Mat& in_img, const float delta,
+                      cv::Mat* out_img);
+
 void RandomHue(const cv::Mat& in_img, cv::Mat* out_img,
                const float hue_prob, const float hue_delta);
 

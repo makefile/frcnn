@@ -662,23 +662,30 @@ image data_augment(image orig, box_label *boxes, int num_boxes, int w, int h, in
 }
 // return CV_32FC3 image
 cv::Mat data_augment(cv::Mat &src, std::vector<std::vector<float> > &rois,
-	int flip, float jitter, float scale, float hue, float saturation, float exposure) {
+	int flip, float jitter, float scale, bool random_rotate, float hue, float saturation, float exposure) {
 	int num_boxes = rois.size();
-	box_label *_boxes = (box_label*)calloc(num_boxes, sizeof(box_label));
-	convert_box(rois, _boxes, src.cols, src.rows);
+	box_label *boxes = (box_label*)calloc(num_boxes, sizeof(box_label));
+	convert_box(rois, boxes, src.cols, src.rows);
 	image orig = cvmat_to_image(src);
 
-	box_label *boxes = (box_label*)calloc(num_boxes, sizeof(box_label));
-        float rd = rand_uniform(0, 1);
-        float rad = M_PI;
-        if(rd > 0.5) rad = M_PI / 2;
-        image rotate_img = rotate_augment(rad, orig, _boxes, boxes, num_boxes);
-	image result = data_augment(rotate_img, boxes, num_boxes, 0, 0, flip, jitter, scale, hue, saturation, exposure);
+        if (random_rotate) {
+            float rad = M_PI;
+            float rd = rand_uniform(0, 1);
+            if(rd > 0.66) rad = M_PI_2;//anti-clock rad
+            else if(rd > 0.33) rad = 0;
+            if (rad > 0) {
+                box_label *_boxes = (box_label*)calloc(num_boxes, sizeof(box_label));
+                image rotate_img = rotate_augment(rad, orig, boxes, _boxes, num_boxes);
+                free_image(orig);
+                free(boxes);
+                orig = rotate_img;
+                boxes = _boxes;
+            }
+        }
+	image result = data_augment(orig, boxes, num_boxes, 0, 0, flip, jitter, scale, hue, saturation, exposure);
 	rois = convert_box(boxes, num_boxes, result.w, result.h);
-	free(_boxes);
 	free(boxes);
 	free_image(orig);
-	free_image(rotate_img);
 	cv::Mat ret = image2cvmat(result);
         free_image(result);
         return ret;
