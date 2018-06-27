@@ -33,8 +33,11 @@ void ConcatLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   const int top_concat_axis = top[0]->shape(concat_axis_);
   const bool kForward = true;
   for (int i = 0; i < bottom.size(); ++i) {
-    const Dtype* bottom_data = bottom[i]->gpu_data();
     const int bottom_concat_axis = bottom[i]->shape(concat_axis_);
+    if (bottom_concat_axis == 0) {
+        continue;
+    }
+    const Dtype* bottom_data = bottom[i]->gpu_data();
     const int bottom_concat_size = bottom_concat_axis * concat_input_size_;
     const int nthreads = bottom_concat_size * num_concats_;
     Concat<Dtype>  // NOLINT_NEXT_LINE(whitespace/operators)
@@ -56,6 +59,9 @@ void ConcatLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
   for (int i = 0; i < bottom.size(); ++i) {
     const int bottom_concat_axis = bottom[i]->shape(concat_axis_);
     if (propagate_down[i]) {
+      if (bottom_concat_axis == 0) {
+          continue;
+      }
       Dtype* bottom_diff = bottom[i]->mutable_gpu_diff();
       const int bottom_concat_size = bottom_concat_axis * concat_input_size_;
       const int nthreads = bottom_concat_size * num_concats_;

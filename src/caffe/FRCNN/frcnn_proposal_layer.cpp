@@ -89,6 +89,10 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
 
   DLOG(ERROR) << "========== generate anchors";
   
+  int feat_stride = this->layer_param_.proposal_param().feat_stride();
+  if (feat_stride == 0) feat_stride = FrcnnParam::feat_stride;
+  CHECK_GT(feat_stride, 0);
+
   for (int j = 0; j < height; j++) {
     for (int i = 0; i < width; i++) {
       for (int k = 0; k < config_n_anchors; k++) {
@@ -99,10 +103,10 @@ void FrcnnProposalLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype> *> &bottom,
         //const int index = i * height * config_n_anchors + j * config_n_anchors + k;
 
         Point4f<Dtype> anchor(
-            FrcnnParam::anchors[k * 4 + 0] + i * FrcnnParam::feat_stride,  // shift_x[i][j];
-            FrcnnParam::anchors[k * 4 + 1] + j * FrcnnParam::feat_stride,  // shift_y[i][j];
-            FrcnnParam::anchors[k * 4 + 2] + i * FrcnnParam::feat_stride,  // shift_x[i][j];
-            FrcnnParam::anchors[k * 4 + 3] + j * FrcnnParam::feat_stride); // shift_y[i][j];
+            FrcnnParam::anchors[k * 4 + 0] + i * feat_stride,  // shift_x[i][j];
+            FrcnnParam::anchors[k * 4 + 1] + j * feat_stride,  // shift_y[i][j];
+            FrcnnParam::anchors[k * 4 + 2] + i * feat_stride,  // shift_x[i][j];
+            FrcnnParam::anchors[k * 4 + 3] + j * feat_stride); // shift_y[i][j];
 
         Point4f<Dtype> box_delta(
             bottom_rpn_bbox[(k * 4 + 0) * height * width + j * width + i],

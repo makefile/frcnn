@@ -464,6 +464,8 @@ message LayerParameter {
   // fyk modify for Cascade R-CNN support
   optional FrcnnProposalTargetParameter proposal_target_param = 250;
   optional BBoxRegParameter bbox_reg_param = 251;
+  // for more ease use
+  optional FrcnnProposalParameter proposal_param = 252;
 
 }
 
@@ -2381,6 +2383,9 @@ message BoxAnnotatorOHEMParameter {
 }
 // end for R-FCN
 
+message FrcnnProposalParameter {
+  optional uint32 feat_stride = 1 [default = 0]; // usally set 16
+}
 // modify for Cascade R-CNN
 message FrcnnProposalTargetParameter {
   optional float gt_iou_thr = 1 [default = 0.95];
