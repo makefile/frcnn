@@ -34,6 +34,7 @@ int FrcnnParam::roi_canonical_level;
 
 int FrcnnParam::test_soft_nms; 
 bool FrcnnParam::test_use_gpu_nms; 
+bool FrcnnParam::test_bbox_vote; 
 
 // Train bounding-box regressors
 bool FrcnnParam::bbox_reg; // Unuse
@@ -127,6 +128,7 @@ void FrcnnParam::load_param(const std::string default_config_path) {
   FrcnnParam::roi_canonical_level = extract_int("roi_canonical_level", 4, default_map);
   FrcnnParam::test_soft_nms = extract_int("test_soft_nms", 0, default_map);
   FrcnnParam::test_use_gpu_nms = static_cast<bool>(extract_int("test_use_gpu_nms", 0, default_map));
+  FrcnnParam::test_bbox_vote = static_cast<bool>(extract_int("test_bbox_vote", 0, default_map));
 
   FrcnnParam::bbox_reg =
       static_cast<bool>(extract_int("bbox_reg", default_map));

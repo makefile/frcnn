@@ -23,6 +23,20 @@ template float get_iou(const Point4f<float> &A, const Point4f<float> &B);
 template double get_iou(const Point4f<double> &A, const Point4f<double> &B);
 
 template <typename Dtype>
+Dtype get_iou(const BBox<Dtype> &A, const BBox<Dtype> &B) {
+  const Dtype xx1 = std::max(A[0], B[0]);
+  const Dtype yy1 = std::max(A[1], B[1]);
+  const Dtype xx2 = std::min(A[2], B[2]);
+  const Dtype yy2 = std::min(A[3], B[3]);
+  Dtype inter = std::max(Dtype(0), xx2 - xx1 + 1) * std::max(Dtype(0), yy2 - yy1 + 1);
+  Dtype areaA = (A[2] - A[0] + 1) * (A[3] - A[1] + 1);
+  Dtype areaB = (B[2] - B[0] + 1) * (B[3] - B[1] + 1);
+  return inter / (areaA + areaB - inter);
+}
+template float get_iou(const BBox<float> &A, const BBox<float> &B);
+template double get_iou(const BBox<double> &A, const BBox<double> &B);
+
+template <typename Dtype>
 vector<vector<Dtype> > get_ious(const vector<Point4f<Dtype> > &A, const vector<Point4f<Dtype> > &B, bool use_gpu) {
 #ifdef USE_GPU_NMS
   if (use_gpu) {
@@ -92,6 +106,40 @@ float get_scale_factor(int width, int height, int short_size, int max_long_size)
   }
   return scale_factor;
 }
+
+template <typename Dtype>
+vector<BBox<Dtype> > bbox_vote(const vector<BBox<Dtype> > &dets_NMS, const vector<BBox<Dtype> > &dets_all, Dtype iou_thresh, Dtype add_val) {
+    unsigned int N = dets_NMS.size();
+    unsigned int M = dets_all.size();
+    vector<BBox<Dtype> > dets_voted(N);
+
+    for (size_t i = 0; i < N; i++) {
+      Dtype acc_score = 1e-8;
+      BBox<Dtype> acc_box;
+      for (size_t j = 0; j < M; j++) {
+        if (get_iou(dets_NMS[i], dets_all[j]) < iou_thresh)
+          continue;
+        Dtype score = dets_all[j].confidence + add_val;//[4]
+        //score = std::max(Dtype(0), score); // neighbor score
+        //acc_box += dets_all[4] * dets_all[0:4]
+        acc_box[0] += score * dets_all[j][0];
+        acc_box[1] += score * dets_all[j][1];
+        acc_box[2] += score * dets_all[j][2];
+        acc_box[3] += score * dets_all[j][3];
+        acc_score  += score;
+      }
+      dets_voted[i][0] = acc_box[0] / acc_score;
+      dets_voted[i][1] = acc_box[1] / acc_score;
+      dets_voted[i][2] = acc_box[2] / acc_score;
+      dets_voted[i][3] = acc_box[3] / acc_score;
+      dets_voted[i].confidence = dets_NMS[i].confidence; // Keep the original score
+      dets_voted[i].id = dets_NMS[i].id; //[5] class id
+    }
+    return dets_voted;
+}
+
+template vector<BBox<float> > bbox_vote(const vector<BBox<float> >& , const vector<BBox<float> >& , float iou_thresh, float add_val);
+template vector<BBox<double> > bbox_vote(const vector<BBox<double> >& , const vector<BBox<double> >& , double iou_thresh, double add_val);
 
 } // namespace frcnn
 

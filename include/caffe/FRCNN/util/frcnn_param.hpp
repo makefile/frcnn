@@ -51,6 +51,7 @@ public:
   // soft nms
   static int test_soft_nms;
   static bool test_use_gpu_nms;
+  static bool test_bbox_vote;
 
   // Train bounding-box regressors
   static bool bbox_reg;

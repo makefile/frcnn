@@ -75,9 +75,11 @@ void Detector::predict(const cv::Mat &img_in, std::vector<caffe::Frcnn::BBox<flo
 
 void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn::BBox<float> > &results) {
 
-  CHECK(FrcnnParam::test_scales.size() == 1) << "Only single-image batch implemented";
+  //CHECK(FrcnnParam::test_scales.size() == 1) << "Only single-image batch implemented";
 
-  float scale_factor = caffe::Frcnn::get_scale_factor(img_in.cols, img_in.rows, FrcnnParam::test_scales[0], FrcnnParam::test_max_size);
+std::vector<std::vector<caffe::Frcnn::BBox<float> > > bboxes_by_class(caffe::Frcnn::FrcnnParam::n_classes);
+for (int test_scale_idx = 0; test_scale_idx < FrcnnParam::test_scales.size(); test_scale_idx++) {
+  float scale_factor = caffe::Frcnn::get_scale_factor(img_in.cols, img_in.rows, FrcnnParam::test_scales[test_scale_idx], FrcnnParam::test_max_size);
 
   cv::Mat img;
   const int height = img_in.rows;
@@ -141,7 +143,7 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
   static float* means = FrcnnParam::bbox_normalize_targets ? FrcnnParam::bbox_normalize_means : zero_means;
   static float* stds  = FrcnnParam::bbox_normalize_targets ? FrcnnParam::bbox_normalize_stds : one_stds;
   for (int cls = 1; cls < cls_num; cls++) { 
-    vector<BBox<float> > bbox;
+    vector<BBox<float> >& bbox = bboxes_by_class[cls];
     for (int i = 0; i < box_num; i++) { 
       float score = cls_prob->cpu_data()[i * cls_num + cls];
       // fyk: speed up
@@ -169,7 +171,15 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
       // LOG(ERROR) << "roi: " << roi.to_string();
       bbox.push_back(BBox<float>(box, score, cls));
     }
+  } //class
+}//scales
+  int cls_num = caffe::Frcnn::FrcnnParam::n_classes;
+  for (int cls = 1; cls < cls_num; cls++) { 
+    vector<BBox<float> >& bbox = bboxes_by_class[cls];
     if (0 == bbox.size()) continue;
+    vector<BBox<float> > bbox_backup = bbox;
+    vector<BBox<float> > bbox_NMS;
+    
     // Apply NMS
     // fyk: GPU nms
 #ifndef CPU_ONLY
@@ -196,7 +206,7 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
       //  _soft_nms(&keep_out[0], &num_out, &boxes_host[0], n_boxes, box_dim, FrcnnParam::test_nms, FrcnnParam::test_soft_nms);
       //}
       for (int i=0; i < num_out; i++) {
-        results.push_back(bbox[keep_out[i]]);
+        bbox_NMS.push_back(bbox[keep_out[i]]);
       }
     } else { // cpu
 #endif
@@ -213,7 +223,7 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
                 }
               }
             }
-            results.push_back(bbox[i]);
+            bbox_NMS.push_back(bbox[i]);
           }
       } else {
         // soft-nms
@@ -222,20 +232,19 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
         int N = bbox.size();
         for (int cur_box_idx = 0; cur_box_idx < N; cur_box_idx++) {
           // find max score box
-          float maxscore = bbox[cur_box_idx][4];
+          float maxscore = bbox[cur_box_idx].confidence;
           int maxpos = cur_box_idx;
           for (int i = cur_box_idx + 1; i < N; i++) {
-            if (maxscore < bbox[i][4]) {
-              maxscore = bbox[i][4];
+            if (maxscore < bbox[i].confidence) {
+              maxscore = bbox[i].confidence;
               maxpos = i;
             }
           }
           //swap
-          for (int t=0; t<5;t++) {
-            float tt = bbox[cur_box_idx][t];
-            bbox[cur_box_idx][t] = bbox[maxpos][t];
-            bbox[maxpos][t] = tt;
-          }
+          BBox<float> tt = bbox[cur_box_idx];
+          bbox[cur_box_idx] = bbox[maxpos];
+          bbox[maxpos] = tt;
+
           for (int i = cur_box_idx + 1; i < N; i++) {
             float iou = get_iou(bbox[i], bbox[cur_box_idx]);
             float weight = 1;
@@ -246,26 +255,32 @@ void Detector::predict_original(const cv::Mat &img_in, std::vector<caffe::Frcnn:
             } else { // original NMS
               if (iou > FrcnnParam::test_nms) weight = 0;
             }
-            bbox[i][4] *= weight;
-            if (bbox[i][4] < score_thresh) {
+            bbox[i].confidence *= weight;
+            if (bbox[i].confidence < score_thresh) {
               // discard the box by swapping with last box
-              for (int t=0; t<5;t++) {
-                float tt = bbox[i][t];
-                bbox[i][t] = bbox[N-1][t];
-                bbox[N-1][t] = tt;
-              }
+              tt = bbox[i];
+              bbox[i] = bbox[N-1];
+              bbox[N-1] = tt;
               N -= 1;
               i -= 1;
             }
           }
         }
         for (int i=0; i < N; i++) {
-          results.push_back(bbox[i]);
+          bbox_NMS.push_back(bbox[i]);
         }
       } //nms type switch
 #ifndef CPU_ONLY
     } //cpu
 #endif
+    // box-voting
+    if (FrcnnParam::test_bbox_vote) {
+      // since soft nms will change score of bbox, we use backup
+      bbox_NMS = bbox_vote(bbox_NMS, bbox_backup);
+      //bbox_NMS = bbox_vote(bbox_NMS, bbox_NMS);
+    }
+
+    results.insert(results.end(), bbox_NMS.begin(), bbox_NMS.end());
   }
 
 }

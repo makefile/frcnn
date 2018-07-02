@@ -109,6 +109,8 @@ void Detector::predict_cascade(const cv::Mat &img_in, std::vector<std::vector<ca
         bbox.push_back(BBox<float>(box, score, cls));
       }
       if (0 == bbox.size()) continue;
+      std::vector<caffe::Frcnn::BBox<float> > bbox_backup = bbox;
+      std::vector<caffe::Frcnn::BBox<float> > bbox_NMS;
       // Apply NMS
       // fyk: GPU nms
 #ifndef CPU_ONLY
@@ -137,7 +139,7 @@ void Detector::predict_cascade(const cv::Mat &img_in, std::vector<std::vector<ca
         //  _soft_nms(&keep_out[0], &num_out, &boxes_host[0], n_boxes, box_dim, FrcnnParam::test_nms, FrcnnParam::test_soft_nms);
         //}
         for (int i=0; i < num_out; i++) {
-          results[out_idx].push_back(bbox[keep_out[i]]);
+          bbox_NMS.push_back(bbox[keep_out[i]]);
         }
       } else { // cpu
 #endif
@@ -154,7 +156,7 @@ void Detector::predict_cascade(const cv::Mat &img_in, std::vector<std::vector<ca
                   }
                 }
               }
-              results[out_idx].push_back(bbox[i]);
+              bbox_NMS.push_back(bbox[i]);
             }
         } else {
           // soft-nms
@@ -201,12 +203,17 @@ void Detector::predict_cascade(const cv::Mat &img_in, std::vector<std::vector<ca
             }
           }
           for (int i=0; i < N; i++) {
-            results[out_idx].push_back(bbox[i]);
+            bbox_NMS.push_back(bbox[i]);
           }
         } //nms type switch
 #ifndef CPU_ONLY
       } //cpu
 #endif
+      // box-voting
+      if (FrcnnParam::test_bbox_vote) {
+        bbox_NMS = bbox_vote(bbox_NMS, bbox_backup);
+      }
+      results[out_idx].insert(results[out_idx].end(), bbox_NMS.begin(), bbox_NMS.end());
     } // for cls
   } // for out_idx
 }
