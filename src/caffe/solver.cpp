@@ -221,7 +221,8 @@ void Solver<Dtype>::Step(int iters) {
       float per_s = (iter_ - iterations_last_) / (lapse ? lapse : 1);
       total_secs += lapse; // total elapsed seconds, we can also use smoothed history elapse time
       //float remaining_time = lapse / param_.display() * (param_.max_iter() - iter_);
-      float remaining_time = total_secs / (iter_ - start_iter) * (stop_iter - iter_);
+      float remaining_time = 0;
+      if (iter_ > start_iter) remaining_time = total_secs / (iter_ - start_iter) * (stop_iter - iter_);
       int remaining_hour = floor(remaining_time / 3600);
       int remaining_min = round(remaining_time / 60 - remaining_hour * 60);
       std::ostringstream text_time;
