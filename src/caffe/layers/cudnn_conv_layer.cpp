@@ -185,6 +185,9 @@ void CuDNNConvolutionLayer<Dtype>::Reshape(
   size_t max_workspace = std::max(total_workspace_fwd,
                              total_workspace_bwd_data);
   max_workspace = std::max(max_workspace, total_workspace_bwd_filter);
+  // fix bug as https://github.com/BVLC/caffe/issues/5729
+  size_t m = 32;
+  max_workspace = (max_workspace + m-1) / m * m; //align address to be multiples of m
   // ensure all groups have enough workspace
   size_t total_max_workspace = max_workspace *
                                (this->group_ * CUDNN_STREAMS_PER_GROUP);
@@ -216,11 +219,12 @@ void CuDNNConvolutionLayer<Dtype>::Reshape(
       // NULL out underlying data
       workspaceData = NULL;
       workspaceSizeInBytes = 0;
-    }
-
-    // if we succeed in the allocation, set pointer aliases for workspaces
-    for (int g = 0; g < (this->group_ * CUDNN_STREAMS_PER_GROUP); g++) {
-      workspace[g] = reinterpret_cast<char *>(workspaceData) + g*max_workspace;
+    } else {
+      // fix bug as https://github.com/BVLC/caffe/issues/5729
+      // if we succeed in the allocation, set pointer aliases for workspaces
+      for (int g = 0; g < (this->group_ * CUDNN_STREAMS_PER_GROUP); g++) {
+        workspace[g] = reinterpret_cast<char *>(workspaceData) + g*max_workspace;
+      }
     }
   }
 
