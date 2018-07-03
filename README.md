@@ -8,13 +8,15 @@
 - support [Deformable Conv](https://arxiv.org/abs/1703.06211) and Deformable PSROIPooling
 - support SSD layers
 - support YOLOv3 inference
+- Action recognition (Two Stream CNN)
+- CTPN layers for scene text detection, port from [tianzhi0549/CTPN](https://github.com/tianzhi0549/CTPN)
 - script for merging `Conv + BatchNorm + Scale` layers to 1 layer when those layer are freezed to reduce memory: 'examples/FRCNN/res50/gen\_merged\_model.py'. script for merge ResNet: 'examples/FRCNN/merge\_resnet.sh'.
 - support snapshot after got -SIGTERM (kill command's default signal)
 - logger tools by VisualDL which can visualize loss scalars and feature images .etc
 - support NMS and IOU calc on GPU, [Soft-NMS](https://arxiv.org/abs/1704.04503) on CPU
-- support solver learning rate warm-up strategy(see sgd\_solver.cpp)
-- Action recognition (Two Stream CNN)
-- CTPN layers for scene text detection, port from [tianzhi0549/CTPN](https://github.com/tianzhi0549/CTPN)
+- support box-voting & multi-scale testing
+- support solver learning rate warm-up strategy & cosine decay lr & Cyclical lr (see sgd\_solver.cpp)
+- support model file encrypt/decrypt, see 'encrypt\_model.cpp' & 'frcnn\_api.cpp'
 - support CUDA 8.0, CuDNN 7.0
 
 **Special layers**

@@ -1,5 +1,7 @@
 #include "api/FRCNN/frcnn_api.hpp"
 #include "caffe/FRCNN/util/frcnn_gpu_nms.hpp"
+#include "api/util/blowfish.hpp"
+#include <cstdio>
 
 namespace FRCNN_API{
 
@@ -31,14 +33,29 @@ void Detector::preprocess(const vector<float> &data, const int blob_idx) {
 }
 
 void Detector::Set_Model(std::string &proto_file, std::string &model_file) {
-  this->roi_pool_layer = - 1;
-  net_.reset(new Net<float>(proto_file, caffe::TEST));
-  net_->CopyTrainedLayersFrom(model_file);
+  // decypt the model, the key is fixed here. maybe you can place it somewhere else.
+  if (FrcnnParam::test_decrypt_model) {
+    // the key is love
+    const char key[]  = {108, 111, 118, 101};
+    vector<char> v_key(key, key + sizeof(key)/sizeof(char));
+    Blowfish bf(v_key);
+    std::string tmp_file = bf.getRandomTmpFile();
+    bf.Decrypt(proto_file.c_str(), tmp_file.c_str());
+    net_.reset(new Net<float>(tmp_file, caffe::TEST));
+    bf.Decrypt(model_file.c_str(), tmp_file.c_str());
+    net_->CopyTrainedLayersFrom(tmp_file);
+    // rm the tmp file
+    remove(tmp_file.c_str());
+  } else {
+    net_.reset(new Net<float>(proto_file, caffe::TEST));
+    net_->CopyTrainedLayersFrom(model_file);
+  }
   mean_[0] = FrcnnParam::pixel_means[0];
   mean_[1] = FrcnnParam::pixel_means[1];
   mean_[2] = FrcnnParam::pixel_means[2];
   const vector<std::string>& layer_names = this->net_->layer_names();
   const std::string roi_name = "roi_pool";
+  this->roi_pool_layer = - 1;
   for (size_t i = 0; i < layer_names.size(); i++) {
     if (roi_name.size() > layer_names[i].size()) continue;
     if (roi_name == layer_names[i].substr(0, roi_name.size())) {
@@ -49,7 +66,7 @@ void Detector::Set_Model(std::string &proto_file, std::string &model_file) {
   // fyk: this var of roi_pool_layer is only used by predict_iterate,when I use 2 context roi_pool_layer or use R-FCN, I don't use predict_iterate
   //CHECK(this->roi_pool_layer >= 0 && this->roi_pool_layer < layer_names.size());
   DLOG(INFO) << "SET MODEL DONE, ROI POOLING LAYER : " << layer_names[this->roi_pool_layer];
-  caffe::Frcnn::FrcnnParam::print_param();
+  //caffe::Frcnn::FrcnnParam::print_param();
 }
 
 vector<boost::shared_ptr<Blob<float> > > Detector::predict(const vector<std::string> blob_names) {
