@@ -424,7 +424,7 @@ bool is_path_exist(const char *pathname) {
         //printf( "%s is no directory\n", pathname );
         return false;
 }
-std::string getRandomTmpFile() {
+std::string Blowfish::getRandomTmpFile() {
     boost::filesystem::path temp = boost::filesystem::unique_path();
     const std::string tempstr    = temp.native();
     std::string tmpfile;
