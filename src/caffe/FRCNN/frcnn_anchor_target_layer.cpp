@@ -94,15 +94,16 @@ void FrcnnAnchorTargetLayer<Dtype>::Forward_cpu(
   	const Dtype im_width  = bottom[2]->data_at(batch_i, 1, 0, 0);
 	vector<Point4f<Dtype> > gt_boxes;
 	int box_num = bottom[2]->data_at(batch_i, 3, 0, 0);
+        //LOG(INFO) << "batch_i " << batch_i << "has GT num: " << box_num;
 	for (int j = 0; j < box_num; j++ ) {
-		label_index ++;
 		gt_boxes.push_back(Point4f<Dtype>(
 			bottom[1]->data_at(label_index, 0, 0, 0),
 			bottom[1]->data_at(label_index, 1, 0, 0),
 			bottom[1]->data_at(label_index, 2, 0, 0),
 			bottom[1]->data_at(label_index, 3, 0, 0)));
-		CHECK(gt_boxes[j][0]>=0 && gt_boxes[j][1]>=0);
-		CHECK(gt_boxes[j][2]<=im_width && gt_boxes[j][3]<=im_height);
+		CHECK(gt_boxes[j][0]>=0 && gt_boxes[j][1]>=0 &&
+		  gt_boxes[j][2]<=im_width && gt_boxes[j][3]<=im_height) << " gt box: [" << gt_boxes[j][0] << "," << gt_boxes[j][1] << "," << gt_boxes[j][2] << "," << gt_boxes[j][3] << "] im_width: "<<im_width<<" im_height: "<<im_height;
+		label_index ++;
 	}
  //still for loop
 

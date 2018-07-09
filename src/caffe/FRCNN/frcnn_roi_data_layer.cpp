@@ -244,7 +244,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   ShuffleImages();//fyk: lines_id_ start from 0 + batchsize,the heading images is skiped in the first batch,but no need to worry about this
   CHECK(lines_id_ < lines_.size() && lines_id_ >= 0) << "select error line id : " << lines_id_;
   // fyk modify for supporting batch > 1,start batch loop
- vector<cv::Mat> ims;
+ vector<cv::Mat> ims, orig_ims;
  vector<float> im_scales;
  int max_rows=0,max_cols=0;
  for (int batch_i = 0; batch_i < batch_size; batch_i++) {
@@ -302,6 +302,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
       reinterpret_cast<float *>(src.data)[offset + 2] -= this->mean_values_[2]; // R
     }
   }
+  orig_ims.push_back(src.clone());
   float im_scale = Frcnn::get_scale_factor(src.cols, src.rows, max_short, max_long_);
   //fyk: check decimation or zoom,use different method
   //fyk: note that im_scale is a scale factor,and cv::Size()=0,so cv::resize will keep the original aspect ratio
@@ -348,20 +349,24 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   int channels = 0;
   for (int i = 0; i < batch_size; i++) {
     cv::Mat scaled_img = ims[i];
-    int index = lines_[lines_id_ + i];
+    cv::Mat orig_img = orig_ims[i];
+    int b_lines_id = lines_id_ + i;
+    if(b_lines_id >= lines_.size()) b_lines_id %= lines_.size();
+    int index = lines_[b_lines_id];
     vector<vector<float> > _rois = roi_database_[index];
     // Flip
     if (do_mirror) {
         //FlipRois(rois, cv_img.cols);
-        FlipRois(_rois, scaled_img.cols);
+        FlipRois(_rois, orig_img.cols);
     }
     // Check and Reset rois
-    CheckResetRois(_rois, image_database_[index], scaled_img.cols, scaled_img.rows, im_scales[i]);
-    const int roi_num = roi_database_[index].size() ;//rois number of index-th image
-    LOG(INFO) << i << " th image has GT num: " << roi_num;
+    CheckResetRois(_rois, image_database_[index], orig_img.cols, orig_img.rows, im_scales[i]);
+    const int roi_num = _rois.size() ;//rois number of index-th image
+    //LOG(INFO) << i << " th image has GT num: " << roi_num;
     // notice that we save the original im_info instead of image info after padding, since we only need the info to guarantee the box inside image border in anchor target layer and proposal layer,.etc and the im_scale only be used in removing small boxes, it doesn't matter too much.
     //static const float arr[] = {(float)scaled_img.rows,(float)scaled_img.cols,(float)im_scales[i],(float)roi_num,(float)0};// size=5 for alignment. add padding
     // BUG fix! DO NOT USE STATIC VALUE, for it only initialize only once
+    // there we still use scaled_img size instead of padded size
     const float arr[] = {(float)scaled_img.rows,(float)scaled_img.cols,(float)im_scales[i],(float)roi_num,(float)0};// size=5 for alignment. add padding
     vector<float> image_label (arr, arr + sizeof(arr) / sizeof(arr[0]) );//Conventional STL,can also use vector = {} in C++11
     channels += roi_num + 1;//rois number of index-th image plus 1 for im_info;
@@ -373,7 +378,7 @@ void FrcnnRoiDataLayer<Dtype>::load_batch(Batch<Dtype> *batch) {
   }
   // fyk modify for supporting batch > 1
   batch->label_.Reshape(channels, 5, 1, 1);
-LOG(INFO) << "batch->label_.shape_string : " << batch->label_.shape_string();
+//LOG(INFO) << "batch->label_.shape_string : " << batch->label_.shape_string();
   Dtype *top_label = batch->label_.mutable_cpu_data();
   //CHECK_EQ(rois.size(), channels-batch_size);
   // fyk save im_info,will push to top blob at forward()

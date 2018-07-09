@@ -64,7 +64,6 @@ void FrcnnProposalTargetLayer<Dtype>::Forward_cpu(
   //_sample_rois(all_rois, gt_boxes, gt_labels, fg_rois_per_image, rois_per_image, labels, rois, bbox_targets, bbox_inside_weights);
   //according to rpn_rois & im_info,split all_rois, gt_boxes, gt_labels to each image
   vector<Point4f<Dtype> > all_rois;
-  LOG(INFO) << "batch_i "<<batch_i;
   for (; rpn_rois_index < bottom[0]->num(); rpn_rois_index++) {
     int i = rpn_rois_index;
     if(bottom[0]->data_at(i,0,0,0) != batch_i) break;
@@ -76,12 +75,13 @@ void FrcnnProposalTargetLayer<Dtype>::Forward_cpu(
     // fyk modify for supporting batch > 1,coment check
     //CHECK_EQ(bottom[0]->data_at(i,0,0,0), 0) << "Only single item batches are supported";
   }
+  //LOG(INFO) << "batch_i "<<batch_i << " has rois num: " << all_rois.size();
 
   vector<Point4f<Dtype> > gt_boxes;
   vector<int> gt_labels;
   //int box_num = bottom[2]->data_at(batch_i,3,0,0);// in im_info
   int box_num = bottom[2]->mutable_cpu_data()[batch_i * 5 + 3];// in im_info maybe same as data_at(batch_i,3,0,0);
-  DLOG(INFO) << batch_i << " th image has GT num: " << box_num;
+  //LOG(INFO) << batch_i << " th image has GT num: " << box_num;
   for (int j = 0; j < box_num; j++) {
     int i = gt_boxes_index ++;
     gt_boxes.push_back(Point4f<Dtype>(
@@ -233,6 +233,46 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
   // The indices that we're selecting (both fg and bg)
   std::vector<int> keep_inds(fg_inds);
   keep_inds.insert(keep_inds.end(), bg_inds.begin(), bg_inds.end());
+
+  // fyk add for solving the problem of zero roi problem, better than setting bg_thresh_lo to 0 in config
+  // Need more?
+  int remaining = rois_per_image - keep_inds.size();
+  if (remaining > 0) {
+    // Looks like we don't have enough samples to maintain the desired
+    // balance. Reduce requirements and fill in the rest. This is
+    // likely different from the Mask RCNN paper.
+    // There is a small chance we have neither fg nor bg samples.
+    if (keep_inds.size() == 0) {
+        // Pick bg regions with easier IoU threshold
+        for (int i = 0; i < all_rois.size(); ++i) {
+          if (max_overlaps[i] < FrcnnParam::bg_thresh_lo) { 
+            bg_inds.push_back(i);
+          }
+        }
+        if (bg_inds.size() > 0) {
+            shuffle(bg_inds.begin(), bg_inds.end(), (caffe::rng_t *) this->rng_->generator());
+            bg_inds.resize(rois_per_image);
+            keep_inds.insert(keep_inds.end(), bg_inds.begin(), bg_inds.end());
+        }
+    }else{
+        if (bg_inds.size() == 0) {
+            for (int i = 0; i < all_rois.size(); ++i) {
+	      // Negative ROIs are those with max IoU 0.1-0.5 (hard example mining)
+	      // To hard example mine or not to hard example mine, that's the question
+              if (max_overlaps[i] < FrcnnParam::bg_thresh_hi) {
+                bg_inds.push_back(i);
+              }
+            }
+	}
+        // Fill the rest with repeated bg rois.
+        if (bg_inds.size() > 0) while (remaining > 0) {
+            int rmin = std::min(remaining, (int)bg_inds.size());
+            keep_inds.insert(keep_inds.end(), bg_inds.begin(), bg_inds.begin() + rmin);
+            remaining -= rmin;
+        }
+    }
+  }
+
   // Select sampled values from various arrays:
   labels.resize(keep_inds.size());
   rois.resize(keep_inds.size());
