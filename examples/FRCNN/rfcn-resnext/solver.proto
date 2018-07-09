@@ -1,0 +1,29 @@
+# Resnet 101   When 07: 72.x+%, using 07+12, 79.x+%(18w iterations)
+train_net: "exp/rfcn-resnext/train_resnext50-32x4d-rfcn++.proto"
+#train_net: "exp/rfcn-resnext/train_resnext101-32x4d-merge.proto"
+#train_net: "exp/fpn-det/train_fpn-det_roi-ctx.proto"
+#train_net: "exp/fpn-det/train_val_merged-8s.proto"
+#train_net: "exp/light-rfcn-res50/train_val_merged-light-ohem.proto"
+#train_net: "exp/rfcn-res50/train_val_merged-atrous-ohem.proto"
+#base_lr: 0.0001
+base_lr: 0.001
+lr_policy: "cosine"
+#lr_policy: "multistep"
+gamma: 0.1
+stepvalue: 60000
+#stepvalue: 100000
+#max_iter: 120000
+max_iter: 80000
+display: 100
+#display: 1
+average_loss: 100
+momentum: 0.9
+weight_decay: 0.0001
+# function
+snapshot: 20000
+# We still use the snapshot prefix, though
+snapshot_prefix: "exp/snapshot/rfcn++_resnext50-32x4d_mix"
+#snapshot_prefix: "exp/snapshot/rfcn_resnext101-32x4d_mix"
+#snapshot_prefix: "exp/snapshot/rfcn++_fpn-det_roi-ctx_mix"
+#snapshot_prefix: "exp/snapshot/rfcn++-fpn-det-8s-mix"
+iter_size: 2

@@ -256,7 +256,7 @@ if __name__ == '__main__':
     args = parse_args()
     images, gts, results = prepare_data(args)
 
-    print('Prepare Data Done')
+    #print('Prepare Data Done')
     ovthresh = args.overlap
 
     total_image = len(images)
@@ -280,21 +280,22 @@ if __name__ == '__main__':
     #    if index % 2000 == 0:
     #        print('Count {} / {} images').format(index,total_image)
 
-    for index in range(num_class):
+    for index in range(1,num_class):
         print '{} has {} Ground Truth, {} Predicted Results'.format(CLASSES[index],GT_num_class[index],RES_num_class[index])
 
     AP = np.zeros(num_class)
 
     for cls in range(1,num_class,1): # Ingore __background__
         rec, prec, AP[cls] = cal_ap(all_boxes[cls], gts, cls)
-        print 'AP for {} = {}'.format(CLASSES[cls],'%.4f'%AP[cls])
+        #print 'AP for {} = {}'.format(CLASSES[cls],'%.2f'%(AP[cls]*100))
 
-    print 'mAP = {}'.format('%.4f'%np.mean(AP[1:]))
-    clses = ''
-    aps = ''
+    print 'mAP = \x1b[0;32;40m{}\x1b[0m'.format('%.2f'%(np.mean(AP[1:])*100))
+    print 'x----------------------------------------------------------->'
+    clses = '{} '.format('%-10s'%'mAP')
+    aps = '{} '.format('%-10.2f'%(np.mean(AP[1:])*100))
     for cls in range(1,num_class):
-        clses += '{} \t'.format(CLASSES[cls])
-        aps += '{} \t'.format('%.2f'%(AP[cls]*100))
+        clses += '{} '.format('%-10s'%CLASSES[cls])
+        aps += '{} '.format('%-10.2f'%(AP[cls]*100))
     print clses
     print aps
 
