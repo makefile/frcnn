@@ -163,7 +163,10 @@ void FrcnnRoiDataLayer<Dtype>::DataLayerSetUp(
   }
 
   LOG(INFO) << "Shuffling data";
-  const unsigned int prefetch_rng_seed = FrcnnParam::rng_seed;
+  // fyk: if we use multi GPU
+  // int solver_count = Caffe::solver_count();
+  // Caffe::solver_rank() is set different value of each device by parallel.cpp 
+  const unsigned int prefetch_rng_seed = FrcnnParam::rng_seed + Caffe::solver_rank();
   prefetch_rng_.reset(new Caffe::RNG(prefetch_rng_seed));
   lines_id_ = 0; // First Shuffle
   CHECK(prefetch_rng_);

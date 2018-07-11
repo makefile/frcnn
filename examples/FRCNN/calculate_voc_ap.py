@@ -22,8 +22,8 @@ voc_classes = [
            'cow', 'diningtable', 'dog', 'horse',
            'motorbike', 'person', 'pottedplant',
            'sheep', 'sofa', 'train', 'tvmonitor' ]
-NWPU_classes = ['plane','ship','storage','harbor','bridge']
-CLASSES = ['__background__'] + NWPU_classes
+my_classes = ['plane','ship','storage','harbor','bridge','vehicle']
+CLASSES = ['__background__'] + my_classes
 
 def parse_args():
     """
@@ -249,8 +249,9 @@ def cal_ap(RES, gts, ccls):
     # ground truth
     prec = tp / np.maximum(tp + fp, np.finfo(np.float64).eps)
     ap = voc_ap(rec, prec, True)
+    ap_auc = voc_ap(rec, prec, False) # new metric
 
-    return rec, prec, ap
+    return rec, prec, ap, ap_auc
 
 if __name__ == '__main__':
     args = parse_args()
@@ -284,18 +285,22 @@ if __name__ == '__main__':
         print '{} has {} Ground Truth, {} Predicted Results'.format(CLASSES[index],GT_num_class[index],RES_num_class[index])
 
     AP = np.zeros(num_class)
+    AP_auc = np.zeros(num_class)
 
     for cls in range(1,num_class,1): # Ingore __background__
-        rec, prec, AP[cls] = cal_ap(all_boxes[cls], gts, cls)
+        rec, prec, AP[cls], AP_auc[cls] = cal_ap(all_boxes[cls], gts, cls)
         #print 'AP for {} = {}'.format(CLASSES[cls],'%.2f'%(AP[cls]*100))
 
-    print 'mAP = \x1b[0;32;40m{}\x1b[0m'.format('%.2f'%(np.mean(AP[1:])*100))
+    print 'mAP = \x1b[0;32;40m{}\x1b[0m'.format('%.2f  %.2f'%(np.mean(AP[1:])*100, np.mean(AP_auc[1:])*100))
     print 'x----------------------------------------------------------->'
     clses = '{} '.format('%-10s'%'mAP')
-    aps = '{} '.format('%-10.2f'%(np.mean(AP[1:])*100))
+    aps = '{} '.format('[07] %-5.2f'%(np.mean(AP[1:])*100))
+    aps_auc = '{} '.format('[12] %-5.2f'%(np.mean(AP_auc[1:])*100))
     for cls in range(1,num_class):
         clses += '{} '.format('%-10s'%CLASSES[cls])
         aps += '{} '.format('%-10.2f'%(AP[cls]*100))
+        aps_auc += '{} '.format('%-10.2f'%(AP_auc[cls]*100))
     print clses
     print aps
+    print aps_auc
 

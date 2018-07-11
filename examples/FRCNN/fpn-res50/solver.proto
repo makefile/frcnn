@@ -1,0 +1,21 @@
+# Resnet 101   When 07: 72.x+%, using 07+12, 79.x+%(18w iterations)
+train_net: "exp/fpn-res50/train_val_merged-ohem.proto"
+base_lr: 0.001
+#base_lr: 0.0005
+lr_policy: "multistep"
+gamma: 0.1
+stepvalue: 40000
+#stepvalue: 100000
+max_iter:  120000
+#stepvalue: 50000
+#max_iter: 80000
+display: 100
+average_loss: 100
+momentum: 0.9
+weight_decay: 0.0001
+# function
+snapshot: 10000
+# We still use the snapshot prefix, though
+snapshot_prefix: "exp/snapshot/fpn-res50-mix"
+# 每次循环都会以batch_size大小计算梯度和loss，最后再取iter_size次的平均。可以看成iter_size*batch_size次更新一次参数。
+iter_size: 2
