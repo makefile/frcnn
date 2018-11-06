@@ -28,7 +28,7 @@ class DeformablePSROIPoolingLayer : public Layer<Dtype> {
 
  protected:
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
-    const vector<Blob<Dtype>*>& top){NOT_IMPLEMENTED;}
+    const vector<Blob<Dtype>*>& top);
   virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
     const vector<Blob<Dtype>*>& top);
   virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
