@@ -14,6 +14,6 @@ BUILD=build/examples/YOLO/demo_yolov3.bin
 GLOG_logtostderr=1 $BUILD --gpu $gpu \
        --model models/YOLO/yolov3.proto \
        --weights models/YOLO/yolov3.caffemodel \
-       --default_c examples/YOLO/config/voc_config.json \
+       --classes 80 \
        --image_dir examples/YOLO/images/  \
        --out_dir examples/YOLO/results/

@@ -1,7 +1,5 @@
 /*
- * Company:	Systhesis
- * Author: 	Chen
- * Date:	2018/06/07
+ * part from darknet
  */
 #ifndef __IMAGE_H_
 #define __IMAGE_H_

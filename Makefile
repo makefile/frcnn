@@ -382,8 +382,8 @@ BIN_LDFLAGS += -Wl,-rpath,$(shell pwd)/$(LIB_BUILD_DIR) -L$(LIB_BUILD_DIR) -l$(Y
 ## pybind interface
 # name of .so as well as python module name
 FRCNN_PYBIND := frcnn
-PY$(FRCNN_PYBIND)_SRC := python/frcnn/$(FRCNN_PYBIND).cpp
-# PY$(FRCNN_PYBIND)_HXX :=
+PY$(FRCNN_PYBIND)_SRCS := python/frcnn/$(FRCNN_PYBIND).cpp
+PY$(FRCNN_PYBIND)_OBJS := $(addprefix $(BUILD_DIR)/, ${PY$(FRCNN_PYBIND)_SRCS:.cpp=.o})
 PY_FRCNN_LIB := $(DISTRIBUTE_DIR)/python/$(FRCNN_PYBIND).so
 PY_HXX_FLAGS = -I$(includedir)
 ifeq ($(USE_ANACONDA),1)
@@ -644,10 +644,10 @@ $(MODULE_DYNAMIC_NAME): $(MODULE_OBJS) | $(DEFAULT_LAYER_PATH) $(YAML_DYNLIB) $(
 	$(Q)$(CXX) -shared -o $(MODULE_DYNAMIC_NAME) $(MODULE_OBJS) $(LINKFLAGS) -l$(LIBRARY_NAME) $(LDFLAGS) $(BIN_LDFLAGS)
 
 pyfrcnn: $(PY_FRCNN_LIB)
-$(PY_FRCNN_LIB): $(PY$(FRCNN_PYBIND)_SRC) $(PY$(FRCNN_PYBIND)_HXX) | $(DYNAMIC_NAME)
+$(PY_FRCNN_LIB): $(PY$(FRCNN_PYBIND)_OBJS) | $(DYNAMIC_NAME) $(MODULE_DYNAMIC_NAME)
 	@ echo CXX/LD -o $@ $<
 	@ mkdir -p $(DISTRIBUTE_DIR)/python
-	$(Q)$(CXX) -shared -o $@ $(PY$(FRCNN_PYBIND)_SRC) \
+	$(Q)$(CXX) -shared -o $@ $(PY$(FRCNN_PYBIND)_OBJS) \
             $(LINKFLAGS) $(PY_HXX_FLAGS) $(ANACONDA_PY_LDFLAGS) -L$(LIB_BUILD_DIR) -l$(LIBRARY_NAME) \
             -Wl,-rpath,$(ORIGIN)/../../build/lib
 
