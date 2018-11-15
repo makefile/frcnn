@@ -76,6 +76,7 @@ __global__ void nms_kernel(const int n_boxes, const float nms_overlap_thresh,
 }
 
 void _set_device(int device_id) {
+  if (device_id<=0) return;
   int current_device;
   CUDA_CHECK(cudaGetDevice(&current_device));
   if (current_device == device_id) {
