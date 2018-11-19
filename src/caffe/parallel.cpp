@@ -267,6 +267,14 @@ class Worker : public InternalThread {
   virtual ~Worker() {}
 
  protected:
+  // fyk: Fix for signal ignored in multi-GPU by @cypof
+  SolverAction::Enum CheckForSignals() const {
+    if(rank0_->requested_early_exit()) {
+      return SolverAction::STOP;
+    }
+    return SolverAction::NONE;
+  }
+
   void InternalThreadEntry() {
     // Create solver and install callbacks
     SolverParameter param(rank0_->param());
@@ -279,6 +287,8 @@ class Worker : public InternalThread {
     param.set_type(rank0_->type());
     shared_ptr<Solver<Dtype> > s(SolverRegistry<Dtype>::CreateSolver(param));
     CHECK_EQ(s->type(), rank0_->type());
+    // fyk: catch signal in multi-GPU
+    s->SetActionFunction(boost::bind(&Worker::CheckForSignals, this));
     if (restore_) {
       // Could not make NCCL broadcast solver state, it seems to crash
       // if called in a tight loop, regardless of barriers etc. so
@@ -354,11 +364,13 @@ void NCCL<Dtype>::Run(const vector<int>& gpus, const char* restore) {
   // Run first solver on current thread
   Broadcast();
   solver_->Solve();
-  barrier.wait();  // Hangs without it when running tests
   // Wait for shutdown
+  barrier.wait();  // Hangs without it when running tests
   for (int i = 1; i < gpus.size(); ++i) {
     workers[i]->StopInternalThread();
   }
+  // fyk: place wait() after StopInternalThread() or hangs at multi-gpu training when got SIGTERM interrupted. 
+  // better method by @cypof see #pull/5825
 }
 
 INSTANTIATE_CLASS(Params);

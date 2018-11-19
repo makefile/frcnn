@@ -65,7 +65,7 @@ void FrcnnProposalTargetLayer<Dtype>::Forward_cpu(
   const int stage = this->layer_param_.proposal_target_param().stage();
   if( stage != 0) {
     const float gt_iou_thr = this->layer_param_.proposal_target_param().gt_iou_thr();
-    std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes, FrcnnParam::test_use_gpu_nms);
+    std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes, caffe::Caffe::mode() == caffe::Caffe::GPU && FrcnnParam::test_use_gpu_nms);
     std::vector<Dtype> max_overlaps(all_rois.size(), 0);
     for (int i = 0; i < all_rois.size(); ++ i) {
       for (int j = 0; j < gt_boxes.size(); ++ j) {
@@ -160,7 +160,7 @@ void FrcnnProposalTargetLayer<Dtype>::_sample_rois(const vector<Point4f<Dtype> >
   CHECK_EQ(gt_label.size(), gt_boxes.size());
   // overlaps: (rois x gt_boxes)
   //std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes, this->use_gpu_nms_in_forward_cpu);
-  std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes, FrcnnParam::test_use_gpu_nms);
+  std::vector<std::vector<Dtype> > overlaps = get_ious(all_rois, gt_boxes, caffe::Caffe::mode() == caffe::Caffe::GPU && FrcnnParam::test_use_gpu_nms);
   //this->use_gpu_nms_in_forward_cpu = false; // restore
   std::vector<Dtype> max_overlaps(all_rois.size(), 0);
   std::vector<int> gt_assignment(all_rois.size(), -1);

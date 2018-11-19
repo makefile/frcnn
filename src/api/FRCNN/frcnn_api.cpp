@@ -284,8 +284,8 @@ for (int test_scale_idx = 0; test_scale_idx < FrcnnParam::test_scales.size(); te
           }
         }
         for (int i=0; i < N; i++) {
-           if (bbox[i].confidence >= FrcnnParam::test_score_thresh)
-               bbox_NMS.push_back(bbox[i]);
+          if (bbox[i].confidence >= FrcnnParam::test_score_thresh)
+            bbox_NMS.push_back(bbox[i]);
         }
       } //nms type switch
 #ifndef CPU_ONLY

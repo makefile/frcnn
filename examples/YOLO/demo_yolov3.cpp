@@ -14,9 +14,9 @@ DEFINE_string(gpu, "",
 DEFINE_string(model, "", 
     "The model definition protocol buffer text file.");
 DEFINE_string(weights, "", 
-    "Trained Model By Faster RCNN End-to-End Pipeline.");
-DEFINE_string(default_c, "", 
-    "Default config file path.");
+    "Trained weight file.");
+DEFINE_string(classes, "", 
+    "num of classes.");
 DEFINE_string(image_dir, "",
     "Optional;Test images Dir."); 
 DEFINE_string(out_dir, "",
@@ -34,9 +34,9 @@ int main(int argc, char** argv){
       "  --gpu          7       use 7-th gpu device, default is cpu model\n"
       "  --model        file    protocol buffer text file\n"
       "  --weights      file    Trained Model\n"
-      "  --default_c    file    Default Config File\n"
-      "  --image_dir    file    input image dir \n"
-      "  --out_dir      file    output image dir ");
+      "  --classes      number  number of classes\n"
+      "  --image_dir    dir     input image dir \n"
+      "  --out_dir      dir     output image dir ");
   // Run tool or show usage.
   caffe::GlobalInit(&argc, &argv);
   CHECK( FLAGS_gpu.size() == 0 || FLAGS_gpu.size() == 1 || (FLAGS_gpu.size()==2&&FLAGS_gpu=="-1")) << "Can only support one gpu or none or -1(for cpu)";
@@ -56,14 +56,12 @@ int main(int argc, char** argv){
 
   std::string proto_file             = FLAGS_model.c_str();
   std::string model_file             = FLAGS_weights.c_str();
-  std::string default_config_file    = FLAGS_default_c.c_str();
+  int classes = boost::lexical_cast<int>(FLAGS_classes);
 
   std::string image_dir = FLAGS_image_dir.c_str();
   std::string out_dir = FLAGS_out_dir.c_str();
   std::vector<std::string> images = caffe::Frcnn::get_file_list(image_dir, ".jpg");
 
-//  API::Set_Config(default_config_file);
-//  API::Detector detector(proto_file, model_file); 
   /* Load the network. */
   shared_ptr<Net<float> > net;
   net.reset(new Net<float>(proto_file, caffe::TEST));
@@ -109,7 +107,6 @@ int main(int argc, char** argv){
     Blob<float>* out_blob3 = net->output_blobs()[0];
     blobs.push_back(out_blob3);
     
-    int classes = 80;
     float thresh = 0.5;
     float nms = 0.3;
     int nboxes = 0;
@@ -117,12 +114,11 @@ int main(int argc, char** argv){
 
     LOG(INFO) << "Predict " << images[index] << " cost " << time_.MilliSeconds() << " ms."; 
     //LOG(INFO) << "There are " <<  << " objects in picture.";
-    int i,j;
-    for(i=0;i< nboxes;++i){
+    for(int i=0;i<nboxes;++i){
         //char labelstr[4096] = {0};
         int cls = -1;
-        for(j=0;j<80;++j){
-            if(dets[i].prob[j] > 0.5){
+        for(int j=0;j<classes;++j){
+            if(dets[i].prob[j] > thresh){
                 if(cls < 0){
                     cls = j;
                 }

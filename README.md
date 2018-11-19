@@ -1,6 +1,7 @@
 **Special Features for This Caffe Repository**
 
 - approximate joint train, test and evaluate models of Faster rcnn/R-FCN, .etc
+- support multi-GPU training
 - support [R-FCN](https://arxiv.org/abs/1605.06409) with OHEM
 - support [Light-head R-CNN](https://arxiv.org/abs/1711.07264) / [R-FCN++](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/viewPDFInterstitial/16463/16297)
 - support [Cascade R-CNN](https://arxiv.org/abs/1712.00726)
@@ -17,7 +18,6 @@
 - support box-voting & multi-scale testing
 - support solver learning rate warm-up strategy & cosine decay lr & Cyclical lr (see sgd\_solver.cpp)
 - support model file encrypt/decrypt, see 'encrypt\_model.cpp' & 'frcnn\_api.cpp'
-- support CUDA 8.0, CuDNN 7.0
 
 **Special layers**
 
@@ -50,14 +50,22 @@ data augmentation:
 ## Installation
 
 This repository uses C++11 features, so make sure to use compiler that is compatible of C++11.
+
+Tested on CUDA 8.0/9.2, CuDNN 7.0, NCCLv1[#286916a](https://github.com/NVIDIA/nccl/tree/286916a1a37ca1fe8cd43e280f5c42ec29569fc5).
+
+GCC v5.4.0/7.3.1, note that versions lower than v5 are not supported. 
+Python 2.7 for python scripts.
+
 ```shell
 cd $CAFFE_ROOT
 cp Makefile.config.example Makefile.config
 # modify the content in Makefile.config to adapt your system
 # if you like to use VisualDL to log losses, set USE_VISUALDL to 1,
 # and cd src/logger && make
-make -j
-make pyfrcnn # if you need use python to demo
+make -j7
+# extra: 'py' for python interface of Caffe.
+# extra: 'pyfrcnn' python wrapper of C++ api. You can use this for demo.
+make pyfrcnn py
 ```
 
 All following steps, you should do these in the `$CAFFE_ROOT` path.

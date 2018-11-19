@@ -113,12 +113,14 @@ int yolo_num_detections(layer l,float thresh)
 {
     int i,n;
     int count = 0;
-    for(i=0;i<l.w*l.h;++i){
+    for(int b = 0;b < l.batch;++b){
+      for(i=0;i<l.w*l.h;++i){
         for(n=0;n<l.n;++n){
-            int obj_index = entry_index(l,0,n*l.w*l.h+i,4);
+            int obj_index = entry_index(l,b,n*l.w*l.h+i,4);
             if(l.output[obj_index] > thresh)
                 ++count;
         }
+      }
     }
     return count;
 }
@@ -199,25 +201,27 @@ int get_yolo_detections(layer l,int w, int h, int netw,int neth,float thresh,int
     int i,j,n;
     float* predictions = l.output;
     int count = 0;
-    for(i=0;i<l.w*l.h;++i){
+    for(int b = 0;b < l.batch;++b){
+      for(i=0;i<l.w*l.h;++i){
         int row = i/l.w;
         int col = i%l.w;
         for(n = 0;n<l.n;++n){           
-            int obj_index = entry_index(l,0,n*l.w*l.h + i,4);
+            int obj_index = entry_index(l,b,n*l.w*l.h + i,4);
             float objectness = predictions[obj_index];
             if(objectness <= thresh) continue;
-            int box_index = entry_index(l,0,n*l.w*l.h + i,0);
+            int box_index = entry_index(l,b,n*l.w*l.h + i,0);
 
             dets[count].bbox = get_yolo_box(predictions,l.biases,l.mask[n],box_index,col,row,l.w,l.h,netw,neth,l.w*l.h);
             dets[count].objectness = objectness;
             dets[count].classes = l.classes;
             for(j=0;j<l.classes;++j){
-                int class_index = entry_index(l,0,n*l.w*l.h+i,4+1+j);
+                int class_index = entry_index(l,b,n*l.w*l.h+i,4+1+j);
                 float prob = objectness*predictions[class_index];
                 dets[count].prob[j] = (prob > thresh) ? prob : 0;
             }
             ++count;
         }
+      }
     }
     correct_yolo_boxes(dets,count,w,h,netw,neth,relative);
     return count;
@@ -253,6 +257,7 @@ detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h, int ne
     //float thresh = 0.5;
     float hier_thresh = 0.5;
     //float nms = 0.45;
+    const int relative = 1;
 
     vector<layer> layers_params;
     layers_params.clear();
@@ -265,7 +270,7 @@ detection* get_detections(vector<Blob<float>*> blobs,int img_w,int img_h, int ne
     
 
     //get network boxes
-    detection* dets = get_network_boxes(layers_params,img_w,img_h,netw,neth,thresh,hier_thresh,0,1,nboxes);
+    detection* dets = get_network_boxes(layers_params,img_w,img_h,netw,neth,thresh,hier_thresh,0,relative,nboxes);
 
     //release layer memory
     for(int index =0;index < layers_params.size();++index){

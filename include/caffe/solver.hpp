@@ -93,6 +93,7 @@ class Solver {
    * @brief Returns the solver type.
    */
   virtual inline const char* type() const { return ""; }
+  bool requested_early_exit() const { return requested_early_exit_; }
 
  protected:
   // Make and apply the update value for the current iteration.
@@ -122,7 +123,7 @@ class Solver {
   // that it wants a snapshot saved and/or to exit early.
   ActionCallback action_request_function_;
 
-  // True iff a request to stop early was received.
+  // True if a request to stop early was received.
   bool requested_early_exit_;
 
   // Timing information, handy to tune e.g. nbr of GPUs
