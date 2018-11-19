@@ -72,9 +72,9 @@ void DecodeBBoxLayer<Dtype>::Forward_cpu(
   for (int i = 0; i < roi_num; i++) {
     Point4f<Dtype> roi(rois->cpu_data()[(i * 5) + 1], rois->cpu_data()[(i * 5) + 2], rois->cpu_data()[(i * 5) + 3], rois->cpu_data()[(i * 5) + 4]);
     int cls_max = 1; // proposals should not include bg
-    Dtype mx_score = cls_prob->cpu_data()[i * cls_num + cls_max];
     for (int c = 1; c < cls_num; c++) {
       Dtype score = cls_prob->cpu_data()[i * cls_num + c];
+      Dtype mx_score = cls_prob->cpu_data()[i * cls_num + cls_max];
       if (score > mx_score) {
         cls_max = c;
       }
