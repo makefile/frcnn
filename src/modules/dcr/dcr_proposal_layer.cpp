@@ -43,7 +43,6 @@ void DCRProposalLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   //CHECK_EQ(bottom[0]->channels(),8); 
   CHECK_EQ(bottom[2]->channels(),5); 
   bbox_pred_.ReshapeLike(*bottom[2]);
-  top[2]->ReshapeLike(*bottom[2]);
 }
 
 template <typename Dtype>
@@ -85,7 +84,7 @@ void DCRProposalLayer<Dtype>::Forward_cpu(
       bbox_pred->cpu_data()[(i * cls_num + cls_max) * 4 + 2] * stds[2] + means[2],
       bbox_pred->cpu_data()[(i * cls_num + cls_max) * 4 + 3] * stds[3] + means[3]);
     Point4f<Dtype> box = bbox_transform_inv(roi, delta);
-    bbox_pred_data[i*bbox_dim] = box[0];
+    bbox_pred_data[i*bbox_dim + 0] = box[0];
     bbox_pred_data[i*bbox_dim + 1] = box[1];
     bbox_pred_data[i*bbox_dim + 2] = box[2]; 
     bbox_pred_data[i*bbox_dim + 3] = box[3];
@@ -136,14 +135,18 @@ void DCRProposalLayer<Dtype>::Forward_cpu(
   Dtype* decoded_bbox_data = top[0]->mutable_cpu_data();
   top[1]->Reshape(keep_num, cls_num, 1, 1);
   Dtype* top_cls_prob = top[1]->mutable_cpu_data();
-  top[2]->Reshape(roi_num, 1, 1, 1);
-  Dtype* top_index = top[2]->mutable_cpu_data();
-  caffe_set(top[2]->count(), Dtype(0), top_index);
+  Dtype* top_index = NULL;
+  if (top.size() > 2) {
+    // top_index is roi index of kept rois(top score & valid)
+    top[2]->Reshape(keep_num, 1, 1, 1);
+    top_index = top[2]->mutable_cpu_data();
+    caffe_set(top[2]->count(), Dtype(0), top_index);
+  }
   const Dtype* roi_data = rois->cpu_data();
   for (int i = 0; i < keep_num; i++) {
     const int keep_id = valid_bbox_ids[i];
     const int base_index = keep_id*bbox_dim;
-    decoded_bbox_data[i*bbox_dim] =  roi_data[keep_id*bbox_dim];
+    decoded_bbox_data[i*bbox_dim] =  roi_data[base_index];
     decoded_bbox_data[i*bbox_dim+1] = bbox_pred_data[base_index]; 
     decoded_bbox_data[i*bbox_dim+2] = bbox_pred_data[base_index+1]; 
     decoded_bbox_data[i*bbox_dim+3] = bbox_pred_data[base_index+2]; 
@@ -151,7 +154,7 @@ void DCRProposalLayer<Dtype>::Forward_cpu(
     for (int c = 0; c < cls_num; c++) {
         top_cls_prob[i * cls_num + c] = cls_prob->cpu_data()[keep_id * cls_num + c];
     }
-    top_index[keep_id] = 1;
+    if (top_index != NULL) top_index[i] = keep_id;
   }
 
 }

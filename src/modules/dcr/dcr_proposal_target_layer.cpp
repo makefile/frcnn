@@ -68,9 +68,9 @@ void DCRProposalTargetLayer<Dtype>::Forward_cpu(
   vector<int> pred_labels;
   const int cls_num = bottom[2]->channels();
   for (int i = 0; i < bottom[2]->num(); i++) {
-    int max_score = 0; // prob
-    int max_id = 0;
-    for (int cls = 1; cls < cls_num; cls++) {
+    int max_id = 1;
+    int max_score = bottom[2]->cpu_data()[i * cls_num + max_id]; // prob
+    for (int cls = 2; cls < cls_num; cls++) {
         float score = bottom[2]->cpu_data()[i * cls_num + cls];
         if (score > max_score) {
             max_score = score;

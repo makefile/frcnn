@@ -7,6 +7,7 @@
 - support [Cascade R-CNN](https://arxiv.org/abs/1712.00726)
 - support FPN ([Feature Pyramid Network](https://arxiv.org/abs/1612.03144))
 - support [Deformable Conv](https://arxiv.org/abs/1703.06211) and Deformable PSROIPooling
+- support [Decoupled Classification Refinement](https://arxiv.org/abs/1810.04002)
 - support SSD layers
 - support YOLOv3 inference
 - Action recognition (Two Stream CNN)
