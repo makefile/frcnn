@@ -289,13 +289,48 @@ void DeformableConvolutionLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& b
 
 }
 
+template <typename Dtype>
+void DeformableConvolutionLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+    const vector<Blob<Dtype>*>& top) {
+    const Dtype* weights = this->blobs_[0]->cpu_data();
+    const Dtype* bottom_data = bottom[0]->cpu_data();
+    const Dtype* offset = bottom[1]->cpu_data();
+    top[0]->scale_data(0);//data protect
+    Dtype* top_data = top[0]->mutable_cpu_data();
+    for (int n = 0; n < this->num_; ++n) {
+      //const Dtype* col_buff = bottom_data + n*this->bottom_dim_;
+      deformable_im2col_cpu<Dtype>(bottom_data + n*this->bottom_dim_, //data_col
+                                          offset + n*this->input_offset_dim_,//offset
+                                          bottom[0]->shape(1),
+                                          bottom[0]->shape(2),bottom[0]->shape(3),this->kernel_shape_.cpu_data()[0],this->kernel_shape_.cpu_data()[1],
+                                          this->pad_.cpu_data()[0],this->pad_.cpu_data()[1],this->stride_.cpu_data()[0],this->stride_.cpu_data()[1],
+                                          this->dilation_.cpu_data()[0],this->dilation_.cpu_data()[1],this->deformable_group_,
+                                          this->col_buffer_.mutable_cpu_data());
+
+    // gemm
+    for (int g = 0; g < this->group_; ++g) {
+          caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, this->conv_out_channels_ /
+                                this->group_, this->conv_out_spatial_dim_, this->kernel_dim_,
+                                (Dtype)1., weights + this->weight_offset_ * g, this->col_buffer_.cpu_data() + this->col_offset_ * g,
+                                (Dtype)0., top[0]->mutable_cpu_data() + n * this->top_dim_ + this->output_offset_ * g);                      
+       
+    }
+    
+    if (this->bias_term_) {
+      const Dtype* bias = this->blobs_[1]->cpu_data();
+      caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, this->num_output_,
+          this->out_spatial_dim_, 1, (Dtype)1., bias, this->bias_multiplier_.cpu_data(),
+          (Dtype)1., top_data + n * this->top_dim_);
+      }
+  }
+  
+}
 
 #ifdef CPU_ONLY
-STUB_GPU(DeformableConvolutionLayer);
+  STUB_GPU(DeformableConvolutionLayer);
 #endif
-INSTANTIATE_CLASS(DeformableConvolutionLayer);
-REGISTER_LAYER_CLASS(DeformableConvolution);
 
-
+  INSTANTIATE_CLASS(DeformableConvolutionLayer);
+  REGISTER_LAYER_CLASS(DeformableConvolution);
 
 }  // namespace caffe

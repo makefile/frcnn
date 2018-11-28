@@ -130,6 +130,7 @@ namespace caffe {
   template <typename Dtype>
   void DeformablePSROIPoolingLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
     const vector<Blob<Dtype>*>& top) {
+    
     const Dtype* bottom_data = bottom[0]->gpu_data();
     const Dtype* bottom_rois = bottom[1]->gpu_data();
     const Dtype *bottom_trans = no_trans_ ? NULL : bottom[2]->gpu_data();
@@ -141,19 +142,14 @@ namespace caffe {
     caffe_gpu_set(count, Dtype(0), top_data);
     caffe_gpu_set(count, Dtype(0), mapping_channel_ptr);
     // NOLINT_NEXT_LINE(whitespace/operators)
-/*
-    PSROIPoolingForward<Dtype> << <CAFFE_GET_BLOCKS(count),
-      CAFFE_CUDA_NUM_THREADS >> >(count, bottom_data, spatial_scale_,
-      channels_, height_, width_, pooled_height_,
-      pooled_width_, bottom_rois, output_dim_, group_size_,
-      top_data, mapping_channel_ptr);
-*/
      DeformablePSROIPoolForwardKernel<Dtype> << <CAFFE_GET_BLOCKS(count),
         CAFFE_CUDA_NUM_THREADS>> >(
         count, bottom_data, spatial_scale_, channels_, height_, width_, pooled_height_, pooled_width_,
         bottom_rois, bottom_trans, no_trans_, trans_std_, sample_per_part_, output_dim_, 
         group_size_, part_size_, num_classes, channels_each_class, top_data, mapping_channel_ptr);
     CUDA_POST_KERNEL_CHECK;
+    
+    //Forward_cpu(bottom, top);
   }
     template <typename DType>
     __global__ void DeformablePSROIPoolBackwardAccKernel(

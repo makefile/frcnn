@@ -110,6 +110,7 @@ namespace caffe {
                 int* mapping_channel,
                 Dtype* sample_pos_data,
                 const int sample_num) {
+            #pragma omp parallel for
             for (int n = 0; n < num; ++n) {
                 // [start, end) interval for spatial sampling
                 int roi_add = n*5;

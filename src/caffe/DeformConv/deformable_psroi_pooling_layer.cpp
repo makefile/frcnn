@@ -99,6 +99,7 @@ namespace caffe {
       DType* top_data,
       DType* top_count) {
       //CUDA_KERNEL_LOOP(index, count) {
+      #pragma omp parallel for
       for (int index = 0; index < count; index++) {
         // The output is in order (n, ctop, ph, pw)
         int pw = index % pooled_width;

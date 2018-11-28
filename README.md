@@ -1,7 +1,7 @@
 **Special Features for This Caffe Repository**
 
-- approximate joint train, test and evaluate models of Faster rcnn/R-FCN, .etc
-- support multi-GPU training
+- approximate joint train, test and evaluate models of Faster R-CNN/R-FCN, .etc
+- support multi-GPU training, inference on both GPU/CPU
 - support [R-FCN](https://arxiv.org/abs/1605.06409) with OHEM
 - support [Light-head R-CNN](https://arxiv.org/abs/1711.07264) / [R-FCN++](https://www.aaai.org/ocs/index.php/AAAI/AAAI18/paper/viewPDFInterstitial/16463/16297)
 - support [Cascade R-CNN](https://arxiv.org/abs/1712.00726)
